@@ -439,7 +439,6 @@ record * find( node * root, uint64_t key, bool verbose ) {
     if (i == c->num_keys) 
         return NULL;
     else{
-        printf("find %d %lx %s\n", (record*)c->keys[i], ((record*)c->pointers[i]), ((record*)c->pointers[i])->value);
         return (record *)c->pointers[i];
     }
 }
@@ -822,7 +821,6 @@ node * insert( node * root, uint64_t key, char * value ) {
      * value.
      */
     pointer = make_record(value);
-    printf("pointer %lx %s\n", pointer, pointer->value);
 
     /* Case: the tree does not exist yet.
      * Start a new tree.
