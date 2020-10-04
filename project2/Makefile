@@ -19,17 +19,36 @@ OBJS_FOR_LIB:=$(SRCS_FOR_LIB:.c=.o)
 
 CFLAGS+= -g -fPIC -I $(INC)
 
+OBJS=$(SRCDIR)bpt.o $(SRCDIR)file.o $(SRCDIR)main.o
 TARGET=main
 
-all: $(TARGET)
+all:
+	make clean
+	make compile
 
-$(TARGET): $(TARGET_OBJ)
-	$(CC) $(CFLAGS) -o $(OBJS_FOR_LIB) -c $(SRCS_FOR_LIB)
-	make static_library
-	$(CC) $(CFLAGS) -o $@ $^ -L $(LIBS) -lbpt
+compile: $(OBJS)
+	$(CC) $(CFLAGS) -o $(TARGET) $(SRCDIR)$(TARGET).o -L $(LIBS) -lbpt
+
+$(OBJS):
+	$(CC) $(CFLAGS) -o $@ -c $(@:.o=.c)
+	ar cr $(LIBS)libbpt.a $@
 
 clean:
-	rm $(TARGET) $(TARGET_OBJ) $(OBJS_FOR_LIB) $(LIBS)*
+ifneq ("$(wildcard src/bpt.o)","")
+	rm src/bpt.o
+endif
+ifneq ("$(wildcard src/file.o)","")
+	rm src/file.o
+endif
+ifneq ("$(wildcard src/main.o)","")
+	rm src/main.o
+endif
+ifneq ("$(wildcard $(TARGET))","")
+	rm $(TARGET)
+endif
+ifneq ("$(wildcard lib/libbpt.a)","")
+	rm lib/libbpt.a
+endif
 
 library:
 	gcc -shared -Wl,-soname,libbpt.so -o $(LIBS)libbpt.so $(OBJS_FOR_LIB)

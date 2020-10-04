@@ -1,8 +1,8 @@
-//
-// Created by Sooyoung on 2020/10/01.
-//
+#ifndef __FILE_H__
+#define __FILE_H__
 
-#ifndef INC_2020_ITE2038_2016024857_FILE_H
-#define INC_2020_ITE2038_2016024857_FILE_H
+#include <stdlib.h>
+#include <stdio.h>
 
-#endif //INC_2020_ITE2038_2016024857_FILE_H
+void print_file();
+#endif //__FILE_H__

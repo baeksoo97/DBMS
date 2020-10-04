@@ -2,4 +2,8 @@
 // Created by Sooyoung on 2020/10/01.
 //
 
-#include "../include/file.h"
+#include "file.h"
+
+void print_file(){
+    printf("it's file");
+}
