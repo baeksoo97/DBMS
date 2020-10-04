@@ -1,15 +1,17 @@
 #include "bpt.h"
+#include "file.h"
 
 // MAIN
 
 int main( int argc, char ** argv ) {
-
     char * input_file;
     FILE * fp;
     node * root;
-    int input, range2;
     char instruction;
     char license_part;
+
+    int64_t key, range2;
+    char * value = (char *) malloc(sizeof(char) * 120);
 
     root = NULL;
     verbose_output = false;
@@ -22,10 +24,10 @@ int main( int argc, char ** argv ) {
             exit(EXIT_FAILURE);
         }
     }
-
-    license_notice();
-    usage_1();  
-    usage_2();
+//
+//    license_notice();
+//    usage_1();
+//    usage_2();
 
     if (argc > 2) {
         input_file = argv[2];
@@ -35,8 +37,8 @@ int main( int argc, char ** argv ) {
             exit(EXIT_FAILURE);
         }
         while (!feof(fp)) {
-            fscanf(fp, "%d\n", &input);
-            root = insert(root, input, input);
+            fscanf(fp, "%lld %s\n", &key, value);
+            root = insert(root, key, value);
         }
         fclose(fp);
         print_tree(root);
@@ -46,28 +48,29 @@ int main( int argc, char ** argv ) {
     while (scanf("%c", &instruction) != EOF) {
         switch (instruction) {
         case 'd':
-            scanf("%d", &input);
-            root = delete(root, input);
+            scanf("%lld", &key);
+            root = delete(root, key);
             print_tree(root);
             break;
         case 'i':
-            scanf("%d", &input);
-            root = insert(root, input, input);
+            scanf("%lld", &key);
+            scanf("%s", value);
+            root = insert(root, key, value);
             print_tree(root);
             break;
         case 'f':
         case 'p':
-            scanf("%d", &input);
-            find_and_print(root, input, instruction == 'p');
+            scanf("%lld", &key);
+            find_and_print(root, key, instruction == 'p');
             break;
         case 'r':
-            scanf("%d %d", &input, &range2);
-            if (input > range2) {
+            scanf("%lld %lld", &key, &range2);
+            if (key > range2) {
                 int tmp = range2;
-                range2 = input;
-                input = tmp;
+                range2 = key;
+                key = tmp;
             }
-            find_and_print_range(root, input, range2, instruction == 'p');
+            find_and_print_range(root, key, range2, instruction == 'p');
             break;
         case 'l':
             print_leaves(root);
