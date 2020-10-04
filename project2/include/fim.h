@@ -1,8 +1,8 @@
-#ifndef __FILE_H__
-#define __FILE_H__
+#ifndef __FIM_H__
+#define __FIM_H__
 
 #include <stdlib.h>
 #include <stdio.h>
 
 void print_file();
-#endif //__FILE_H__
+#endif //__FIM_H__
