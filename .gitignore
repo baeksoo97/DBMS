@@ -1,3 +1,6 @@
 /bpt
 .idea/
-project2/.idea/
+/project2/.idea/
+/project2/src/*.o
+/project2/lib/
+/project2/main
