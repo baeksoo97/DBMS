@@ -42,9 +42,9 @@
  * to change the type and content
  * of the value field.
  */
-typedef struct record {
+typedef struct pointer {
     char * value;
-} record;
+} pointer;
 
 /* Type representing a node in the B+ tree.
  * This type is general enough to serve for both
@@ -132,18 +132,18 @@ void find_and_print_range( node * root, uint64_t range1, uint64_t range2, bool v
 uint64_t find_range( node * root, uint64_t key_start, uint64_t key_end, bool verbose,
         uint64_t returned_keys[], void * returned_pointers[]);
 node * find_leaf( node * root, uint64_t key, bool verbose );
-record * find( node * root, uint64_t key, bool verbose );
+pointer * find( node * root, uint64_t key, bool verbose );
 int cut( int length );
 
 // Insertion.
 
-record * make_record(char * value);
+pointer * make_pointer(char * value);
 node * make_node( void );
 node * make_leaf( void );
 int get_left_index(node * parent, node * left);
-node * insert_into_leaf( node * leaf, uint64_t key, record * pointer );
+node * insert_into_leaf( node * leaf, uint64_t key, pointer * pointer );
 node * insert_into_leaf_after_splitting(node * root, node * leaf, uint64_t key,
-                                        record * pointer);
+                                        pointer * pointer);
 node * insert_into_node(node * root, node * parent, 
         int left_index, uint64_t key, node * right);
 node * insert_into_node_after_splitting(node * root, node * parent,
@@ -151,7 +151,7 @@ node * insert_into_node_after_splitting(node * root, node * parent,
         uint64_t key, node * right);
 node * insert_into_parent(node * root, node * left, uint64_t key, node * right);
 node * insert_into_new_root(node * left, uint64_t key, node * right);
-node * start_new_tree(uint64_t key, record * pointer);
+node * start_new_tree(uint64_t key, pointer * pointer);
 node * insert( node * root, uint64_t key, char * value );
 
 // Deletion.

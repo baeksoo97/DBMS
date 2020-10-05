@@ -314,7 +314,7 @@ void print_tree( node * root ) {
             for (i = 0; i <= n->num_keys; i++)
                 enqueue(n->pointers[i]);
         if (verbose_output) {
-            if (n->is_leaf) 
+            if (n->is_leaf)
                 printf("%lx ", (unsigned long)n->pointers[order - 1]);
             else
                 printf("%lx ", (unsigned long)n->pointers[n->num_keys]);
@@ -329,7 +329,7 @@ void print_tree( node * root ) {
  * appropriate message to stdout.
  */
 void find_and_print(node * root, uint64_t key, bool verbose) {
-    record * r = find(root, key, verbose);
+    pointer * r = find(root, key, verbose);
     if (r == NULL)
         printf("Record not found under key %lld.\n", key);
     else 
@@ -356,7 +356,7 @@ void find_and_print_range( node * root, uint64_t key_start, uint64_t key_end,
             printf("Key: %lld   Location: %lx  Value: %s\n",
                     returned_keys[i],
                     (unsigned long)returned_pointers[i],
-                    ((record *)
+                    ((pointer *)
                      returned_pointers[i])->value);
     }
 }
@@ -427,10 +427,10 @@ node * find_leaf( node * root, uint64_t key, bool verbose ) {
 }
 
 
-/* Finds and returns the record to which
+/* Finds and returns the pointer to which
  * a key refers.
  */
-record * find( node * root, uint64_t key, bool verbose ) {
+pointer * find( node * root, uint64_t key, bool verbose ) {
     int i = 0;
     node * c = find_leaf( root, key, verbose );
     if (c == NULL) return NULL;
@@ -439,7 +439,7 @@ record * find( node * root, uint64_t key, bool verbose ) {
     if (i == c->num_keys) 
         return NULL;
     else{
-        return (record *)c->pointers[i];
+        return (pointer *)c->pointers[i];
     }
 }
 
@@ -459,8 +459,8 @@ int cut( int length ) {
 /* Creates a new record to hold the value
  * to which a key refers.
  */
-record * make_record(char * value) {
-    record * new_record = (record *)malloc(sizeof(record));
+pointer * make_record(char * value) {
+    pointer * new_record = (pointer *)malloc(sizeof(pointer));
     new_record->value = (char *)malloc(sizeof(char) * 120);
 
     if (new_record == NULL) {
@@ -528,7 +528,7 @@ int get_left_index(node * parent, node * left) {
  * key into a leaf.
  * Returns the altered leaf.
  */
-node * insert_into_leaf( node * leaf, uint64_t key, record * pointer ) {
+node * insert_into_leaf( node * leaf, uint64_t key, pointer * pointer ) {
 
     int i, insertion_point;
 
@@ -552,7 +552,7 @@ node * insert_into_leaf( node * leaf, uint64_t key, record * pointer ) {
  * the tree's order, causing the leaf to be split
  * in half.
  */
-node * insert_into_leaf_after_splitting(node * root, node * leaf, uint64_t key, record * pointer) {
+node * insert_into_leaf_after_splitting(node * root, node * leaf, uint64_t key, pointer * pointer) {
 
     node * new_leaf;
     uint64_t * temp_keys;
@@ -786,7 +786,7 @@ node * insert_into_new_root(node * left, uint64_t key, node * right) {
 /* First insertion:
  * start a new tree.
  */
-node * start_new_tree(uint64_t key, record * pointer) {
+node * start_new_tree(uint64_t key, pointer * pointer) {
 
     node * root = make_leaf();
     root->keys[0] = key;
@@ -807,7 +807,7 @@ node * start_new_tree(uint64_t key, record * pointer) {
  */
 node * insert( node * root, uint64_t key, char * value ) {
 
-    record * pointer;
+    pointer * pointer;
     node * leaf;
 
     /* The current implementation ignores
@@ -1206,7 +1206,7 @@ node * delete_entry( node * root, node * n, uint64_t key, void * pointer ) {
 node * delete(node * root, uint64_t key) {
 
     node * key_leaf;
-    record * key_record;
+    pointer * key_record;
 
     key_record = find(root, key, false);
     key_leaf = find_leaf(root, key, false);
