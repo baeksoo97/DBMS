@@ -1,6 +1,5 @@
 #include "file.h"
 
-// file.c
 // Allocate an on-disk page from the free page list
 pagenum_t file_alloc_page(){
 }

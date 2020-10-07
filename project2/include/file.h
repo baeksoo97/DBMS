@@ -1,8 +1,9 @@
-#ifndef __FIM_H__
-#define __FIM_H__
+#ifndef __FILE_H__
+#define __FILE_H__
 
 #include <stdlib.h>
 #include <stdio.h>
+
 #define HEADER_PAGE_RESERVED_SIZE 4072
 #define FREE_PAGE_RESERVED_SIZE 4088
 #define PAGE_HEADER_RESERVED_SIZE 104
@@ -57,7 +58,6 @@ typedef struct page_t {
         general_page_t g;
     };
 } page_t;
-
 
 // Allocate an on-disk page from the free page list
 pagenum_t file_alloc_page();
