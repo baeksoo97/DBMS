@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include "db.h"
 #ifdef WINDOWS
 #define bool char
 #define false 0
@@ -151,7 +152,7 @@ node * insert_into_node_after_splitting(node * root, node * parent,
         uint64_t key, node * right);
 node * insert_into_parent(node * root, node * left, uint64_t key, node * right);
 node * insert_into_new_root(node * left, uint64_t key, node * right);
-node * start_new_tree(uint64_t key, pointer * pointer);
+node * start_new_root(uint64_t key, pointer * pointer);
 node * insert( node * root, uint64_t key, char * value );
 
 // Deletion.

@@ -459,7 +459,7 @@ int cut( int length ) {
 /* Creates a new record to hold the value
  * to which a key refers.
  */
-pointer * make_record(char * value) {
+pointer * make_pointer(char * value) {
     pointer * new_record = (pointer *)malloc(sizeof(pointer));
     new_record->value = (char *)malloc(sizeof(char) * 120);
 
@@ -786,7 +786,7 @@ node * insert_into_new_root(node * left, uint64_t key, node * right) {
 /* First insertion:
  * start a new tree.
  */
-node * start_new_tree(uint64_t key, pointer * pointer) {
+node * start_new_root(uint64_t key, pointer * pointer) {
 
     node * root = make_leaf();
     root->keys[0] = key;
@@ -806,7 +806,6 @@ node * start_new_tree(uint64_t key, pointer * pointer) {
  * properties.
  */
 node * insert( node * root, uint64_t key, char * value ) {
-
     pointer * pointer;
     node * leaf;
 
@@ -820,15 +819,14 @@ node * insert( node * root, uint64_t key, char * value ) {
     /* Create a new record for the
      * value.
      */
-    pointer = make_record(value);
+    pointer = make_pointer(value);
 
     /* Case: the tree does not exist yet.
      * Start a new tree.
      */
 
     if (root == NULL) 
-        return start_new_tree(key, pointer);
-
+        return start_new_root(key, pointer);
 
     /* Case: the tree already exists.
      * (Rest of function body.)

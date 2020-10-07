@@ -48,8 +48,8 @@ typedef struct general_page_t{
     pagenum_t next;
 
     union{
-        entry entry[INTERNAL_ORDER];
-        record record[LEAF_ORDER];
+        entry * entry;
+        record * record;
     };
 } general_page_t;
 
@@ -66,11 +66,18 @@ typedef struct page_t {
 // GLOBALS
 extern int file_id;
 extern int table_id;
+extern page_t * header_page;
 
-// Initialize the number of pages and header in file
 void file_init_pages();
 
+// Create a new page
+page_t * make_page();
+
+page_t * header();
+// Initialize header in file
 void file_init_header();
+
+void file_init_root(const page_t * root);
 
 // Allocate an on-disk page from the free page list
 pagenum_t file_alloc_page();
@@ -79,10 +86,10 @@ pagenum_t file_alloc_page();
 void file_free_page(pagenum_t pagenum);
 
 // Read an on-disk page into the in-memory page structure(dest)
-void file_read_page(pagenum_t pagenum, page_t* dest);
+void file_read_page(pagenum_t pagenum, page_t * dest);
 
 // Write an in-memory page(src) to the on-disk page
-void file_write_page(pagenum_t pagenum, const page_t* src);
+void file_write_page(pagenum_t pagenum, const page_t * src);
 
 void print_file();
 #endif //__FIM_H__

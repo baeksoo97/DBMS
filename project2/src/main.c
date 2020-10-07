@@ -7,6 +7,8 @@
 
 int main( int argc, char ** argv ) {
     table_id = open_table("hello.txt");
+    record * r = make_record(1, "hello");
+    start_new_tree(1, r);
 
     char * input_file;
     FILE * fp;

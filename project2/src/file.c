@@ -2,44 +2,65 @@
 
 int table_id = -1;
 int file_id = -1;
+page_t * header_page;
 
 void file_init_pages(){
     // init header
     printf("file id %d\n", file_id);
 
     file_init_header();
-    page_t * page = malloc(sizeof(page));
+    printf("file init header end\n");
+
     for(int i = 0; i < 20; i++){
         printf("alloc %lld ", file_alloc_page());
-        file_read_page(0, page);
-        printf(" : header %lld %lld %lld \n", page->h.free_pagenum, page->h.root_pagenum, page->h.num_pages);
+        header_page = header();
+        printf(" : header %lld %lld %lld \n", header_page->h.free_pagenum, header_page->h.root_pagenum, header_page->h.num_pages);
     }
     file_free_page(10);
-    file_read_page(0, page);
-    printf(" : header %lld %lld %lld \n", page->h.free_pagenum, page->h.root_pagenum, page->h.num_pages);
+    header_page = header();
+    printf(" : header %lld %lld %lld \n", header_page->h.free_pagenum, header_page->h.root_pagenum, header_page->h.num_pages);
 
     printf("alloc %lld ", file_alloc_page());
-    file_read_page(0, page);
-    printf(" : header %lld %lld %lld \n", page->h.free_pagenum, page->h.root_pagenum, page->h.num_pages);
+    header_page = header();
+    printf(" : header %lld %lld %lld \n", header_page->h.free_pagenum, header_page->h.root_pagenum, header_page->h.num_pages);
 
-    free(page);
+}
+
+page_t * make_page(){
+    page_t * page = malloc(sizeof(page_t));
+    if (page == NULL){
+        perror("Page creation.");
+        exit(EXIT_FAILURE);
+    }
+    return page;
+}
+
+page_t * header(){
+    file_read_page(0, header_page);
+    return header_page;
 }
 
 void file_init_header(){
-    page_t * page = malloc(sizeof(page_t));
-    page->h.free_pagenum = 0;
-    page->h.root_pagenum = 0;
-    page->h.num_pages = 1;
+    header_page = make_page();
 
-    file_write_page(0, page);
-    free(page);
+    header_page->h.free_pagenum = 0;
+    header_page->h.root_pagenum = 0;
+    header_page->h.num_pages = 1;
+    file_write_page(0, header_page);
+}
+
+void file_init_root(const page_t * root){
+    pagenum_t root_pagenum = file_alloc_page();
+
+    header()->h.root_pagenum = root_pagenum;
+
+    file_write_page(root_pagenum, root);
+    file_write_page(0, header_page);
 }
 
 // Allocate an on-disk page from the free page list
 pagenum_t file_alloc_page(){
-    page_t * header_page = malloc(sizeof(page_t));
-    file_read_page(0, header_page);
-
+    header_page = header();
     // Allocate an on-disk page more
     if (header_page->h.free_pagenum == 0){
         off_t file_size = lseek(file_id, 0, SEEK_END);
@@ -53,7 +74,7 @@ pagenum_t file_alloc_page(){
             }
         }
 
-        page_t * page = malloc(sizeof(page_t));
+        page_t * page = make_page();
         pagenum_t start_free_pagenum = file_size / PAGE_SIZE;
         pagenum_t curr_free_pagenum = start_free_pagenum;
         for(int i = 0; i < PAGE_NUM_FOR_RESERVE; i++){
@@ -74,7 +95,7 @@ pagenum_t file_alloc_page(){
     }
 
     pagenum_t free_pagenum = header_page->h.free_pagenum;
-    page_t * free_page = malloc(sizeof(page_t));
+    page_t * free_page = make_page();
 
     // Get free page from on-disk
     file_read_page(free_pagenum, free_page);
@@ -83,20 +104,18 @@ pagenum_t file_alloc_page(){
     header_page->h.free_pagenum = free_page->f.next_free_pagenum;
     file_write_page(0, header_page);
 
-    printf("header_page->h.free_pagenum %lld\n", header_page->h.free_pagenum);
-
     free(free_page);
-    free(header_page);
+
+    printf("Alloc Page %lld (h.free_pagenum %lld)\n", free_pagenum, header()->h.free_pagenum);
 
     return free_pagenum;
 }
 
 // Free an on-disk page to the free page list
 void file_free_page(pagenum_t pagenum){
-    page_t * header_page = malloc(sizeof(page_t));
-    file_read_page(0, header_page);
+    header_page = header();
 
-    page_t * free_page = malloc(sizeof(page_t));
+    page_t * free_page = make_page();
     free_page->f.next_free_pagenum = header_page->h.free_pagenum;
     header_page->h.free_pagenum = pagenum;
     printf("file_free_page %lld\n", header_page->h.free_pagenum);
@@ -104,7 +123,6 @@ void file_free_page(pagenum_t pagenum){
     file_write_page(pagenum, free_page);
     file_write_page(0, header_page);
 
-    free(header_page);
     free(free_page);
 }
 
