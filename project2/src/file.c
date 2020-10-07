@@ -1,19 +1,130 @@
 #include "file.h"
 
+int table_id = -1;
+int file_id = -1;
+
+void file_init_pages(){
+    // init header
+    printf("file id %d\n", file_id);
+
+    file_init_header();
+    page_t * page = malloc(sizeof(page));
+    for(int i = 0; i < 20; i++){
+        printf("alloc %lld ", file_alloc_page());
+        file_read_page(0, page);
+        printf(" : header %lld %lld %lld \n", page->h.free_pagenum, page->h.root_pagenum, page->h.num_pages);
+    }
+    file_free_page(10);
+    file_read_page(0, page);
+    printf(" : header %lld %lld %lld \n", page->h.free_pagenum, page->h.root_pagenum, page->h.num_pages);
+
+    printf("alloc %lld ", file_alloc_page());
+    file_read_page(0, page);
+    printf(" : header %lld %lld %lld \n", page->h.free_pagenum, page->h.root_pagenum, page->h.num_pages);
+
+    free(page);
+}
+
+void file_init_header(){
+    page_t * page = malloc(sizeof(page_t));
+    page->h.free_pagenum = 0;
+    page->h.root_pagenum = 0;
+    page->h.num_pages = 1;
+
+    file_write_page(0, page);
+    free(page);
+}
+
 // Allocate an on-disk page from the free page list
 pagenum_t file_alloc_page(){
+    page_t * header_page = malloc(sizeof(page_t));
+    file_read_page(0, header_page);
+
+    // Allocate an on-disk page more
+    if (header_page->h.free_pagenum == 0){
+        off_t file_size = lseek(file_id, 0, SEEK_END);
+
+        // Guarantee the size of file to be the unit of PAGE_SIZE(4096)
+        if (file_size % PAGE_SIZE != 0){
+            file_size = (file_size / PAGE_SIZE + 1) * PAGE_SIZE;
+            if (ftruncate(file_id, file_size)){
+                printf("Error : it cannot truncate to size %d\n", file_size);
+                return -1;
+            }
+        }
+
+        page_t * page = malloc(sizeof(page_t));
+        pagenum_t start_free_pagenum = file_size / PAGE_SIZE;
+        pagenum_t curr_free_pagenum = start_free_pagenum;
+        for(int i = 0; i < PAGE_NUM_FOR_RESERVE; i++){
+            if (i < PAGE_NUM_FOR_RESERVE - 1)
+                page->f.next_free_pagenum = curr_free_pagenum + 1;
+            else
+                page->f.next_free_pagenum = 0; // the end of free page list
+
+            file_write_page(curr_free_pagenum, page);
+            curr_free_pagenum++;
+        }
+        free(page);
+
+        pagenum_t added_pagenum = curr_free_pagenum - start_free_pagenum;
+
+        header_page->h.free_pagenum = start_free_pagenum;
+        header_page->h.num_pages += added_pagenum;
+    }
+
+    pagenum_t free_pagenum = header_page->h.free_pagenum;
+    page_t * free_page = malloc(sizeof(page_t));
+
+    // Get free page from on-disk
+    file_read_page(free_pagenum, free_page);
+
+    // Update header page to on-disk
+    header_page->h.free_pagenum = free_page->f.next_free_pagenum;
+    file_write_page(0, header_page);
+
+    printf("header_page->h.free_pagenum %lld\n", header_page->h.free_pagenum);
+
+    free(free_page);
+    free(header_page);
+
+    return free_pagenum;
 }
 
 // Free an on-disk page to the free page list
 void file_free_page(pagenum_t pagenum){
+    page_t * header_page = malloc(sizeof(page_t));
+    file_read_page(0, header_page);
+
+    page_t * free_page = malloc(sizeof(page_t));
+    free_page->f.next_free_pagenum = header_page->h.free_pagenum;
+    header_page->h.free_pagenum = pagenum;
+    printf("file_free_page %lld\n", header_page->h.free_pagenum);
+
+    file_write_page(pagenum, free_page);
+    file_write_page(0, header_page);
+
+    free(header_page);
+    free(free_page);
 }
 
 // Read an on-disk page into the in-memory page structure(dest)
 void file_read_page(pagenum_t pagenum, page_t* dest){
+//    printf("file_read_page %lld : %d\n", pagenum, sizeof(*dest));
+    lseek(file_id, pagenum * PAGE_SIZE, SEEK_SET);
+    read(file_id, dest, sizeof(*dest));
 }
 
 // Write an in-memory page(src) to the on-disk page
 void file_write_page(pagenum_t pagenum, const page_t* src){
+    off_t file_size = lseek(file_id, 0, SEEK_END);
+
+    lseek(file_id, pagenum * PAGE_SIZE, SEEK_SET);
+    ssize_t write_size = write(file_id, src, sizeof(*src));
+
+    printf("write pagenum %lld (size %zd) : %lld ", pagenum, write_size, file_size);
+    file_size = lseek(file_id, 0, SEEK_END);
+    printf("-> %lld\n", file_size);
 }
 
 void print_file(){

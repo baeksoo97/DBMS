@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 #include <unistd.h> // access function
-#include <fcntl.h>
+#include <fcntl.h> // open
 #include "file.h"
 
 // Open existing data file using 'pathname' or create one if not existed

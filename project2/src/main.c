@@ -6,6 +6,8 @@
 // MAIN
 
 int main( int argc, char ** argv ) {
+    table_id = open_table("hello.txt");
+
     char * input_file;
     FILE * fp;
     node * root;

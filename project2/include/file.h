@@ -1,9 +1,12 @@
 #ifndef __FILE_H__
 #define __FILE_H__
 
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h> // uint64_t
+#include <unistd.h> // lseek, write, open
 
+#define PAGE_SIZE 4096
+#define PAGE_NUM_FOR_RESERVE 10
 #define HEADER_PAGE_RESERVED_SIZE 4072
 #define FREE_PAGE_RESERVED_SIZE 4088
 #define PAGE_HEADER_RESERVED_SIZE 104
@@ -11,6 +14,7 @@
 #define INTERNAL_ORDER 248
 #define LEAF_ORDER 31
 
+// data types
 typedef uint64_t key_t;
 typedef uint64_t pagenum_t;
 
@@ -52,12 +56,21 @@ typedef struct general_page_t{
 typedef struct page_t {
     // in-memory page structure
     union{
-        uint8_t reserved[4096];
+        uint8_t reserved[PAGE_SIZE];
         header_page_t h;
         free_page_t f;
         general_page_t g;
     };
 } page_t;
+
+// GLOBALS
+extern int file_id;
+extern int table_id;
+
+// Initialize the number of pages and header in file
+void file_init_pages();
+
+void file_init_header();
 
 // Allocate an on-disk page from the free page list
 pagenum_t file_alloc_page();
