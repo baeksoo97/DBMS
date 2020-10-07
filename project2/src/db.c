@@ -46,8 +46,8 @@ int db_insert(key_t key, char * value){
     // Create a new record for the value.
     pointer = make_record(key, value);
 
-    page_t * header_page = malloc(sizeof(page_t));
-    file_read_page(0, header_page);
+    header_page = header();
+
     // Case: the tree does not exist yet. Start a new tree.
     if (header_page->h.root_pagenum == 0)
         return start_new_tree(key, pointer);
