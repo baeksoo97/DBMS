@@ -53,17 +53,7 @@ int db_insert(key_t key, char * value){
     // Case: the tree does not exist yet. Start a new tree.
     if (header_page->h.root_pagenum == 0) {
 
-        db_insert_new_tree(key, pointer);
-
-        header_page = header();
-        printf("(root %lld)\n", header_page->h.root_pagenum);
-        page_t * p = make_leaf_page();
-        file_read_page(header_page->h.root_pagenum, p);
-        printf("%lx\n", *p->g.record);
-        printf("%lx\n", p->g.record[0]);
-        printf("%lld\n", p->g.next);
-        printf("(%lld %s)\n", p->g.record[0].key, p->g.record[0].value);
-        return 1;
+        return db_insert_new_tree(key, pointer);
     }
 
     // Case: the tree already exists. (Rest of function body.)
@@ -115,43 +105,14 @@ page_t * make_general_page(void) {
 page_t * make_internal_page(void){
     page_t * internal = make_general_page();
 
-    internal->g.entry = (entry *)malloc(INTERNAL_ORDER  * sizeof(entry));
-    if (internal->g.entry == NULL) {
-        perror("New internal entry array.");
-        exit(EXIT_FAILURE);
-    }
     return internal;
-}
-
-void free_internal_page(page_t * internal){
-    free(internal->g.entry);
-    free(internal);
 }
 
 page_t * make_leaf_page(void){
     page_t * leaf = make_general_page();
 
-    leaf->g.record = (record *)malloc(LEAF_ORDER * sizeof(record));
-    printf("make leaf page %lx\n", *leaf->g.record);
-    if (leaf->g.record == NULL) {
-        perror("New leaf record array.");
-        exit(EXIT_FAILURE);
-    }
     leaf->g.is_leaf = 1;
     return leaf;
-}
-
-void free_leaf_page(page_t * leaf){
-    free(leaf->g.record);
-    free(leaf);
-}
-
-void free_page(page_t * page){
-    if (page->g.is_leaf){
-        free_leaf_page(page);
-    }
-    else
-        free_internal_page(page);
 }
 
 // First insertion: start a new tree.
@@ -182,8 +143,9 @@ int db_insert_new_tree(key_t key, record * pointer) {
     printf("(root %lld %s)\n", page->g.record[0].key, page->g.record[0].value);
 
 //    free(page);
-    free_leaf_page(root);
-    free(pointer);
+//    free_leaf_page(root);
+//    free_page(root);
+//    free(pointer);
     return 0; // if success
     // return -1; if not success
 }
@@ -207,10 +169,10 @@ int db_insert_into_leaf(pagenum_t leaf_pagenum, page_t * leaf, key_t key, record
 
     file_write_page(leaf_pagenum, leaf);
 
-    free(leaf); // can be free_leaf_page ?
-    free(pointer);
+//    free(leaf); // can be free_leaf_page ?
+//    free(pointer);
 
-    return 1;
+    return 0;
 }
 
 /* Inserts a new key and pointer
@@ -262,8 +224,8 @@ int db_insert_into_leaf_after_splitting(pagenum_t leaf_pagenum, page_t * leaf, k
         new_leaf->g.num_keys++; // result :  LEAF_ORDER + 1 - split
     }
 
-    free(temp_pointers);
-    free(pointer);
+//    free(temp_pointers);
+//    free(pointer);
 
     new_leaf->g.next = leaf->g.next;
     leaf->g.next = new_leaf_pagenum;
@@ -312,8 +274,8 @@ int db_insert_into_parent(pagenum_t left_pagenum, page_t * left, key_t key, page
      */
 
     if (parent->g.num_keys < INTERNAL_ORDER){
-        free_page(left);
-        free_page(right);
+//        free_page(left);
+//        free_page(right);
         return db_insert_into_node(parent_pagenum, parent, left_index, key, right_pagenum);
     }
 
@@ -346,13 +308,13 @@ int db_insert_into_new_root(pagenum_t left_pagenum, page_t * left, key_t key, pa
     file_write_page(left_pagenum, left);
     file_write_page(right_pagenum, right);
 
-    free_internal_page(root);
-    if (left->g.is_leaf) free_leaf_page(left);
-    else free_internal_page(left);
-    if (right->g.is_leaf) free_leaf_page(right);
-    else free_internal_page(right);
+//    free_internal_page(root);
+//    if (left->g.is_leaf) free_leaf_page(left);
+//    else free_internal_page(left);
+//    if (right->g.is_leaf) free_leaf_page(right);
+//    else free_internal_page(right);
 
-    return 1;
+    return 0;
 }
 
 /* Inserts a new key and pointer to a node
@@ -382,9 +344,9 @@ int db_insert_into_node(pagenum_t n_pagenum, page_t * n,
 
     file_write_page(n_pagenum, n);
 
-    free_internal_page(n);
+//    free_internal_page(n);
 
-    return 1;
+    return 0;
 }
 
 /* Inserts a new key and pointer to a node
@@ -444,7 +406,7 @@ int db_insert_into_node_after_splitting(pagenum_t old_pagenum, page_t * old_page
         new_page->g.num_keys++;
     }
 
-    free(temp_entry);
+//    free(temp_entry);
     file_write_page(old_pagenum, old_page);
 
     new_page->g.parent = old_page->g.parent;
@@ -684,5 +646,5 @@ void db_print_tree() {
     }
 
     printf("\n");
-    free(page);
+    free_page(page);
 }

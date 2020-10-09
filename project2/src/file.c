@@ -35,6 +35,10 @@ page_t * make_page(){
     return page;
 }
 
+void free_page(page_t * page){
+    free(page);
+}
+
 page_t * header(){
     file_read_page(0, header_page);
     return header_page;

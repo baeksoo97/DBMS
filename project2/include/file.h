@@ -48,8 +48,8 @@ typedef struct general_page_t{
     pagenum_t next; // internal indicates the first child, leaf page indicates the right sibiling
 
     union{
-        entry * entry;
-        record * record;
+        entry entry[INTERNAL_ORDER];
+        record record[LEAF_ORDER];
     };
 } general_page_t;
 
@@ -72,6 +72,7 @@ void file_init_pages();
 
 // Create a new page
 page_t * make_page();
+void free_page(page_t * page);
 
 page_t * header();
 // Initialize header in file
