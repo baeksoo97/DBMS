@@ -21,20 +21,7 @@ int main( int argc, char ** argv ) {
     verbose_output = false;
 
     if (argc > 1) {
-        order = atoi(argv[1]);
-        if (order < MIN_ORDER || order > MAX_ORDER) {
-            fprintf(stderr, "Invalid order: %d .\n\n", order);
-            usage_3();
-            exit(EXIT_FAILURE);
-        }
-    }
-//
-//    license_notice();
-//    usage_1();
-//    usage_2();
-
-    if (argc > 2) {
-        input_file = argv[2];
+        input_file = argv[1];
         fp = fopen(input_file, "r");
         if (fp == NULL) {
             perror("Failure  open input file.");
@@ -54,47 +41,30 @@ int main( int argc, char ** argv ) {
         switch (instruction) {
         case 'd':
             scanf("%lld", &key);
-            root = delete(root, key);
-            print_tree(root);
+            db_delete(key);
+            db_print_tree();
             break;
         case 'i':
-            scanf("%lld", &key);
-            scanf("%s", value);
+            scanf("%lld %s", &key, value);
             db_insert(key, value);
             db_print_tree();
-//            root = insert(root, key, value);
-//            print_tree(root);
             break;
         case 'f':
-        case 'p':
             scanf("%lld", &key);
-            find_and_print(root, key, instruction == 'p');
-            break;
-        case 'r':
-            scanf("%lld %lld", &key, &range2);
-            if (key > range2) {
-                int tmp = range2;
-                range2 = key;
-                key = tmp;
-            }
-            find_and_print_range(root, key, range2, instruction == 'p');
-            break;
-        case 'l':
-            print_leaves(root);
+            if (db_find(key, value) == 0)
+                printf("find key %lld -> value %s\n", key, value);
+            else
+                printf("find not key %lld\n", key);
             break;
         case 'q':
             while (getchar() != (int)'\n');
             return EXIT_SUCCESS;
             break;
-        case 't':
-            print_tree(root);
-            break;
-        case 'v':
-            verbose_output = !verbose_output;
+        case 'p':
+            db_print_tree();
             break;
         case 'x':
-            if (root)
-                root = destroy_tree(root);
+            // make it empty
             print_tree(root);
             break;
         default:

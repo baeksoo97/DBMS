@@ -12,6 +12,7 @@ int open_table(const char * pathname){
         }
         printf("open already exist one : %d\n", fd);
         file_id = fd;
+        file_init_header(1);
     }
     else{
         // file doesn't exist
@@ -22,7 +23,7 @@ int open_table(const char * pathname){
         }
         printf("create new one : %d\n", fd);
         file_id = fd;
-        file_init_header();
+        file_init_header(0);
     }
 
     return fd;

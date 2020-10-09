@@ -2,29 +2,7 @@
 
 int table_id = -1;
 int file_id = -1;
-page_t * header_page;
-
-void file_init_pages(){
-    // init header
-    printf("file id %d\n", file_id);
-
-    file_init_header();
-    printf("file init header end\n");
-
-    for(int i = 0; i < 20; i++){
-        printf("alloc %lld ", file_alloc_page());
-        header_page = header();
-        printf(" : header %lld %lld %lld \n", header_page->h.free_pagenum, header_page->h.root_pagenum, header_page->h.num_pages);
-    }
-    file_free_page(10);
-    header_page = header();
-    printf(" : header %lld %lld %lld \n", header_page->h.free_pagenum, header_page->h.root_pagenum, header_page->h.num_pages);
-
-    printf("alloc %lld ", file_alloc_page());
-    header_page = header();
-    printf(" : header %lld %lld %lld \n", header_page->h.free_pagenum, header_page->h.root_pagenum, header_page->h.num_pages);
-
-}
+page_t * header_page = NULL;
 
 page_t * make_page(){
     page_t * page = malloc(sizeof(page_t));
@@ -44,13 +22,15 @@ page_t * header(){
     return header_page;
 }
 
-void file_init_header(){
+void file_init_header(int isExist){
     header_page = make_page();
 
-    header_page->h.free_pagenum = 0;
-    header_page->h.root_pagenum = 0;
-    header_page->h.num_pages = 1;
-    file_write_page(0, header_page);
+    if (!isExist){
+        header_page->h.free_pagenum = 0;
+        header_page->h.root_pagenum = 0;
+        header_page->h.num_pages = 1;
+        file_write_page(0, header_page);
+    }
 }
 
 void file_init_root(const page_t * root){
@@ -135,7 +115,7 @@ void file_read_page(pagenum_t pagenum, page_t* dest){
 //    printf("file_read_page %lld : %d\n", pagenum, sizeof(*dest));
     lseek(file_id, pagenum * PAGE_SIZE, SEEK_SET);
     ssize_t read_size = read(file_id, dest, sizeof(*dest));
-    if (read_size != 4096)
+    if (read_size != PAGE_SIZE)
         printf("ERROR READ_PAGE : pagenum %lld: read size %zd\n", pagenum, read_size);
 }
 
@@ -146,7 +126,7 @@ void file_write_page(pagenum_t pagenum, const page_t* src){
     lseek(file_id, pagenum * PAGE_SIZE, SEEK_SET);
     ssize_t write_size = write(file_id, src, sizeof(*src));
 
-    if (write_size != 4096)
+    if (write_size != PAGE_SIZE)
         printf("ERROR WRITE_PAGE : pagenum %lld: read size %zd\n", pagenum, write_size);
 //    printf("write pagenum %lld (size %zd) : %lld ", pagenum, write_size, file_size);
     file_size = lseek(file_id, 0, SEEK_END);

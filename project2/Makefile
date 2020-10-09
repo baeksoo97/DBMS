@@ -26,14 +26,13 @@ OUT_OBJS = $(patsubst %, $(SRCDIR)%, $(OBJS))
 TARGET=main
 
 all: $(TARGET)
-	rm data_file.txt
 
 $(TARGET): $(OUT_OBJS)
 	make static_library
 	$(CC) $(CFLAGS) -o $@ $^ -L $(LIBS) -lbpt
 
 clean:
-	rm $(TARGET) $(OUT_OBJS) $(LIBS)* data_file.txt
+	rm $(TARGET) $(OUT_OBJS) $(LIBS)*
 
 library:
 	gcc -shared -Wl,-soname,libbpt.so -o $(LIBS)libbpt.so $(OBJS_FOR_LIB)

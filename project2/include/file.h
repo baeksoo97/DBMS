@@ -68,10 +68,10 @@ extern int file_id;
 extern int table_id;
 extern page_t * header_page;
 
-void file_init_pages();
-
 // Create a new page
 page_t * make_page();
+
+// Free page
 void free_page(page_t * page);
 
 page_t * header();
