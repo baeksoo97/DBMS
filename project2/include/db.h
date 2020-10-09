@@ -37,7 +37,6 @@ pagenum_t db_find_leaf(key_t key);
 // Find the matching record and delete it if found
 int db_delete(key_t key);
 
-
 void db_print_tree();
 int IsEmpty();
 int IsFull();

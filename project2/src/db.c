@@ -41,9 +41,10 @@ int db_insert(key_t key, char * value){
     page_t * leaf;
 
     // The current implementation ignores duplicates.
-//    if (db_find(key, value) == 0){
-////        return -1;
-//    }
+    if (db_find(key, value) == 0){
+        printf("value find %s\n", value);
+        return -1;
+    }
 
     // Create a new record for the value.
     pointer = make_record(key, value);
@@ -463,12 +464,24 @@ int db_get_left_index(page_t * parent, pagenum_t left_pagenum) {
 
 // Find the record containing input 'key'
 int db_find(key_t key, char * ret_val) {
+    int i;
+    page_t * leaf;
+    pagenum_t leaf_pagenum = db_find_leaf(key);
+    if (leaf_pagenum == -1){
+        return -1;
+    }
 
-    return 0;
-}
-
-int db_find_key(key_t key) {
-
+    leaf = make_page();
+    file_read_page(leaf_pagenum, leaf);
+    for(i = 0; i < leaf->g.num_keys; i++){
+        if (leaf->g.record[i].key == key) break;
+    }
+    if (i == leaf->g.num_keys)
+        return -1;
+    else{
+        strcpy(ret_val, leaf->g.record[i].value);
+        return 0;
+    }
 }
 
 /* Traces the path from the root to a leaf, searching by key.
