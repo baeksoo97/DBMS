@@ -92,5 +92,4 @@ void file_read_page(pagenum_t pagenum, page_t * dest);
 // Write an in-memory page(src) to the on-disk page
 void file_write_page(pagenum_t pagenum, const page_t * src);
 
-void print_file();
 #endif //__FIM_H__
