@@ -84,10 +84,9 @@ record * make_record(key_t key, char * value) {
         perror("Record creation.");
         exit(EXIT_FAILURE);
     }
-    else {
-        new_record->key = key;
-        strcpy(new_record->value, value);
-    }
+    new_record->key = key;
+    strcpy(new_record->value, value);
+
     printf("new_record(%lld , %s)\n", new_record->key, new_record->value);
     return new_record;
 }
@@ -161,8 +160,8 @@ int db_insert_into_leaf(pagenum_t leaf_pagenum, page_t * leaf, key_t key, record
 
     file_write_page(leaf_pagenum, leaf);
 
-//    free(leaf); // can be free_leaf_page ?
-//    free(pointer);
+    free_page(leaf);
+    free(pointer);
 
     return 0;
 }
@@ -218,7 +217,7 @@ int db_insert_into_leaf_after_splitting(pagenum_t leaf_pagenum, page_t * leaf, k
     }
 
     free(temp_pointers);
-//    free(pointer);
+    free(pointer);
 
     new_leaf->g.next = leaf->g.next;
     leaf->g.next = new_leaf_pagenum;
@@ -268,8 +267,8 @@ int db_insert_into_parent(pagenum_t left_pagenum, page_t * left, key_t key, page
      */
 
     if (parent->g.num_keys < INTERNAL_ORDER){
-//        free_page(left);
-//        free_page(right);
+        free_page(left);
+        free_page(right);
         return db_insert_into_node(parent_pagenum, parent, left_index, key, right_pagenum);
     }
 
@@ -307,11 +306,9 @@ int db_insert_into_new_root(pagenum_t left_pagenum, page_t * left, key_t key, pa
     file_write_page(right_pagenum, right);
     file_write_page(0, header_page);
 
-//    free_internal_page(root);
-//    if (left->g.is_leaf) free_leaf_page(left);
-//    else free_internal_page(left);
-//    if (right->g.is_leaf) free_leaf_page(right);
-//    else free_internal_page(right);
+    free_page(root);
+    free_page(left);
+    free_page(right);
 
     return 0;
 }
@@ -344,7 +341,7 @@ int db_insert_into_node(pagenum_t n_pagenum, page_t * n,
 
     file_write_page(n_pagenum, n);
 
-//    free_internal_page(n);
+    free_page(n);
 
     return 0;
 }
@@ -406,7 +403,7 @@ int db_insert_into_node_after_splitting(pagenum_t old_pagenum, page_t * old_page
         new_page->g.num_keys++;
     }
 
-//    free(temp_entry);
+    free(temp_entry);
     file_write_page(old_pagenum, old_page);
 
     new_page->g.parent = old_page->g.parent;
