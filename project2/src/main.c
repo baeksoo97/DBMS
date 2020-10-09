@@ -6,7 +6,7 @@
 // MAIN
 
 int main( int argc, char ** argv ) {
-    table_id = open_table("hello.txt");
+    table_id = open_table("data_file.txt");
 
     char * input_file;
     FILE * fp;
@@ -43,6 +43,7 @@ int main( int argc, char ** argv ) {
         while (!feof(fp)) {
             fscanf(fp, "%lld %s\n", &key, value);
             db_insert(key, value);
+//            db_print_tree();
         }
         fclose(fp);
         db_print_tree();
