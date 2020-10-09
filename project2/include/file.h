@@ -45,7 +45,7 @@ typedef struct general_page_t{
     uint32_t is_leaf;
     uint32_t num_keys;
     uint8_t reserved[PAGE_HEADER_RESERVED_SIZE];
-    pagenum_t next;
+    pagenum_t next; // internal indicates the first child, leaf page indicates the right sibiling
 
     union{
         entry * entry;

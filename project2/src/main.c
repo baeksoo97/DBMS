@@ -7,8 +7,6 @@
 
 int main( int argc, char ** argv ) {
     table_id = open_table("hello.txt");
-    record * r = make_record(1, "hello");
-    start_new_tree(1, r);
 
     char * input_file;
     FILE * fp;
@@ -44,10 +42,10 @@ int main( int argc, char ** argv ) {
         }
         while (!feof(fp)) {
             fscanf(fp, "%lld %s\n", &key, value);
-            root = insert(root, key, value);
+            db_insert(key, value);
         }
         fclose(fp);
-        print_tree(root);
+        db_print_tree();
     }
 
     printf("> ");
@@ -61,8 +59,10 @@ int main( int argc, char ** argv ) {
         case 'i':
             scanf("%lld", &key);
             scanf("%s", value);
-            root = insert(root, key, value);
-            print_tree(root);
+            db_insert(key, value);
+            db_print_tree();
+//            root = insert(root, key, value);
+//            print_tree(root);
             break;
         case 'f':
         case 'p':
