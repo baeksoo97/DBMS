@@ -6,22 +6,24 @@
 // MAIN
 
 int main( int argc, char ** argv ){
-    table_id = open_table("data_file.txt");
-
-    char * input_file;
+    char input_file[1000];
+    char data_file[1000];
     FILE * fp;
     char instruction;
 
     key_t key;
-    char * value = (char *)malloc(120 * sizeof(char));
+    char value[120];
 
     if (argc > 1){
-        input_file = argv[1];
+        strcpy(input_file, argv[1]);
         fp = fopen(input_file, "r");
         if (fp == NULL){
             perror("Failure  open input file.");
             exit(EXIT_FAILURE);
         }
+
+        strcpy(data_file, argv[2]);
+        table_id = open_table(data_file);
         while (!feof(fp)){
             fscanf(fp, "%c ", &instruction);
             if (instruction == 'i'){
@@ -47,6 +49,10 @@ int main( int argc, char ** argv ){
     printf("> ");
     while (scanf("%c", &instruction) != EOF){
         switch (instruction){
+        case 'o':
+            scanf("%s", data_file);
+            table_id = open_table(data_file);
+            break;
         case 'd':
             scanf("%lld", &key);
             db_delete(key);
@@ -74,7 +80,6 @@ int main( int argc, char ** argv ){
         case 'q':
             while (getchar() != (int)'\n');
             return EXIT_SUCCESS;
-            break;
         default:
             usage_2();
             break;
