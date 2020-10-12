@@ -23,9 +23,9 @@ int db_insert_into_leaf(pagenum_t leaf_pagenum, page_t * leaf, key_t key, record
 int db_insert_into_leaf_after_splitting(pagenum_t leaf_pagenum, page_t * leaf, key_t key, record * pointer);
 int db_insert_into_parent(pagenum_t left_pagenum, page_t * left, key_t key, pagenum_t right_pagenum, page_t * right);
 int db_insert_into_new_root(pagenum_t left_pagenum, page_t * left, key_t key, pagenum_t right_pagenum, page_t * right);
-int db_insert_into_node(pagenum_t n_pagenum, page_t * n,
+int db_insert_into_page(pagenum_t n_pagenum, page_t * n,
                         int left_index, key_t key, pagenum_t right_pagenum);
-int db_insert_into_node_after_splitting(pagenum_t old_pagenum, page_t * old_page, int left_index,
+int db_insert_into_page_after_splitting(pagenum_t old_pagenum, page_t * old_page, int left_index,
         key_t key, pagenum_t right_pagenum);
 int db_get_left_index(page_t * parent, pagenum_t left_pagenum);
 int db_cut(int length);

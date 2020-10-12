@@ -76,9 +76,11 @@ page_t * make_page();
 // Free page
 void free_page(page_t * page);
 
-page_t * header();
 // Initialize header in file
-void file_init_header();
+void file_init_header(int isExist);
+
+// Read header from file
+page_t * header();
 
 void file_init_root(const page_t * root);
 
