@@ -15,7 +15,7 @@ int main( int argc, char ** argv ) {
     char license_part;
 
     int64_t key, range2;
-    char * value = (char *) malloc(sizeof(char) * 120);
+    char * value = (char *)malloc(120 * sizeof(char));
 
     root = NULL;
     verbose_output = false;

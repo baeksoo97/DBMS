@@ -511,6 +511,7 @@ pagenum_t db_find_leaf(key_t key) {
             if (key >= page->g.entry[i].key) i++;
             else break;
         }
+        printf("db_find_leaf %d\n", i);
 
         if (i == 0)
             pagenum = page->g.next;
@@ -529,13 +530,21 @@ pagenum_t db_find_leaf(key_t key) {
 // Find the matching record and delete it if found
 int db_delete(key_t key){
     pagenum_t key_leaf_pagenum;
+    char * value;
+    int key_found;
 
+    value = (char *)malloc(120 * sizeof(char));
+    key_found = db_find(key, value);
     key_leaf_pagenum = db_find_leaf(key);
+
+    printf("key_found %d\n", key_found);
     printf("key_leaf_pagenum %lld\n", key_leaf_pagenum);
-    if (key_leaf_pagenum != 0){
+    if (key_found != -1 && key_leaf_pagenum != -1){
         return db_delete_entry(key_leaf_pagenum, key);
     }
-    return 0;
+    else{
+        return -1;
+    }
 }
 
 /* Deletes an entry from the B+ tree.
@@ -551,6 +560,7 @@ int db_delete_entry(pagenum_t n_pagenum, key_t key) {
     page_t * neighbor;
     pagenum_t parent_pagenum, neighbor_pagenum;
 
+    printf("db_delete_entry %lld, key %lld\n", n_pagenum, key);
     n_page = make_page();
     file_read_page(n_pagenum, n_page);
 
@@ -595,7 +605,7 @@ int db_delete_entry(pagenum_t n_pagenum, key_t key) {
     else
         neighbor_pagenum = parent->g.entry[neighbor_index].pagenum;
 
-    capacity = n_page->g.is_leaf ? db_cut(LEAF_ORDER) : db_cut(INTERNAL_ORDER);
+    capacity = n_page->g.is_leaf == 1 ? db_cut(LEAF_ORDER) : db_cut(INTERNAL_ORDER);
 
     neighbor = make_page();
     file_read_page(neighbor_pagenum, neighbor);
@@ -765,6 +775,7 @@ int db_coalesce_nodes(pagenum_t parent_pagenum, page_t * parent, pagenum_t n_pag
         }
 
         // All children must now point up to the same parent.
+        tmp = make_page();
         tmp_pagenum = neighbor->g.next;
         file_read_page(tmp_pagenum, tmp);
         tmp->g.parent = neighbor_pagenum;
@@ -775,6 +786,7 @@ int db_coalesce_nodes(pagenum_t parent_pagenum, page_t * parent, pagenum_t n_pag
             tmp->g.parent = neighbor_pagenum;
             file_write_page(tmp_pagenum, tmp);
         }
+        free_page(tmp);
     }
     /* In a leaf, append the keys and pointers of n to the neighbor.
      * Set the neighbor's last pointer to point to what had been n's right neighbor.
@@ -815,13 +827,13 @@ int db_redistribute_nodes(pagenum_t parent_pagenum, page_t * parent,
     int i, j, split, neighbor_end;
     pagenum_t tmp_pagenum;
 
-    split = db_cut(neighbor->g.num_keys);
 
     /* Case: n has a neighbor to the left.
      * Pull the neighbor's last key-pointer pair over
      * from the neighbor's right end to n's left end.
      */
     if (neighbor_index != -2) {
+        split = db_cut(neighbor->g.num_keys);
         if (!n_page->g.is_leaf) {
             neighbor_end = neighbor->g.num_keys;
 
@@ -871,20 +883,22 @@ int db_redistribute_nodes(pagenum_t parent_pagenum, page_t * parent,
      * to n's rightmost position.
      */
     else {
+        split = db_cut(neighbor->g.num_keys);
         if (!n_page->g.is_leaf) {
             n_page->g.entry[0].key = k_prime;
             n_page->g.entry[0].pagenum = neighbor->g.next;
             n_page->g.num_keys++;
 
             neighbor_end = neighbor->g.num_keys;
-            for (i = 1, j = 0; i < split - 1; i++, j++) {
-                memcpy(n_page->g.entry + i, neighbor->g.entry + j, sizeof(entry));
+            for (i = 0, j = 1; i < split - 1; i++, j++) {
+                memcpy(n_page->g.entry + j, neighbor->g.entry + i, sizeof(entry));
                 n_page->g.num_keys++;
                 neighbor->g.num_keys--;
             }
 
             parent->g.entry[k_prime_index].key = neighbor->g.entry[split - 1].key;
             neighbor->g.next = neighbor->g.entry[split - 1].pagenum;
+            neighbor->g.num_keys--;
 
             for (++i, j = 0; i < neighbor_end; i++, j++) {
                 memcpy(neighbor->g.entry + j, neighbor->g.entry + i, sizeof(entry));
