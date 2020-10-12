@@ -28,22 +28,19 @@ int main( int argc, char ** argv ){
             fscanf(fp, "%c ", &instruction);
             if (instruction == 'i'){
                 fscanf(fp, "%lld %s\n", &key, value);
-                db_insert(key, value);
+                insert(key, value, false);
             }
             else if (instruction == 'd'){
                 fscanf(fp, "%lld\n", &key);
-                db_delete(key);
+                delete(key, false);
             }
             else if (instruction == 'f'){
                 fscanf(fp, "%lld\n", &key);
-                if (db_find(key, value) == 0)
-                    printf("find key %lld -> value %s\n", key, value);
-                else
-                    printf("find not key %lld\n", key);
+                find(key, false);
             }
         }
         fclose(fp);
-        db_print_tree();
+        print_tree();
     }
 
     printf("> ");
@@ -55,33 +52,28 @@ int main( int argc, char ** argv ){
             break;
         case 'd':
             scanf("%lld", &key);
-            db_delete(key);
-            db_print_tree();
+            delete(key, true);
             break;
         case 'i':
             scanf("%lld %s", &key, value);
-            db_insert(key, value);
-            db_print_tree();
+            insert(key, value, true);
             break;
         case 'f':
             scanf("%lld", &key);
-            if (db_find(key, value) == 0)
-                printf("find key %lld -> value %s\n", key, value);
-            else
-                printf("find not key %lld\n", key);
+            find(key, true);
             break;
         case 'p':
-            db_print_tree();
+            print_tree();
             break;
         case 'x':
             // make it empty
-            db_print_tree();
+            print_tree();
             break;
         case 'q':
             while (getchar() != (int)'\n');
             return EXIT_SUCCESS;
         default:
-            usage_2();
+            usage();
             break;
         }
         while (getchar() != (int)'\n');

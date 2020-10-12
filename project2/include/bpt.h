@@ -20,7 +20,8 @@
 
 // Output and utility.
 
-void usage_2( void );
+void usage(void);
+void print_tree(void);
 //void enqueue( node * new_node );
 //node * dequeue( void );
 //int height( node * root );
@@ -32,7 +33,7 @@ void usage_2( void );
 //uint64_t find_range( node * root, uint64_t key_start, uint64_t key_end, bool verbose,
 //        uint64_t returned_keys[], void * returned_pointers[]);
 //node * find_leaf( node * root, uint64_t key, bool verbose );
-void find(key_t key);
+void find(key_t key, bool verbose);
 //int cut( int length );
 
 // Insertion.
@@ -52,7 +53,7 @@ void find(key_t key);
 //node * insert_into_parent(node * root, node * left, uint64_t key, node * right);
 //node * insert_into_new_root(node * left, uint64_t key, node * right);
 //node * start_new_root(uint64_t key, pointer * pointer);
-void insert(key_t key, char * value);
+void insert(key_t key, char * value, bool verbose);
 
 // Deletion.
 
@@ -64,7 +65,7 @@ void insert(key_t key, char * value);
 //                          int neighbor_index,
 //        int k_prime_index, uint64_t k_prime);
 //node * delete_entry( node * root, node * n, uint64_t key, void * pointer );
-void delete(key_t key);
+void delete(key_t key, bool verbose);
 
 //void destroy_tree_nodes(node * root);
 //node * destroy_tree(node * root);

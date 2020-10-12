@@ -5,38 +5,42 @@
 // FUNCTION DEFINITIONS.
 
 // Second message to the user.
-void usage_2( void ) {
+void usage(void){
     printf("Enter any of the following commands after the prompt > :\n"
     "\ti <k>  -- Insert <k> (an integer) as both key and value).\n"
     "\tf <k>  -- Find the value under key <k>.\n"
-    "\tp <k> -- Print the path from the root to key k and its associated "
-           "value.\n"
-    "\tr <k1> <k2> -- Print the keys and values found in the range "
-            "[<k1>, <k2>\n"
     "\td <k>  -- Delete key <k> and its associated value.\n"
     "\tx -- Destroy the whole tree.  Start again with an empty tree of the "
            "same order.\n"
-    "\tt -- Print the B+ tree.\n"
-    "\tl -- Print the keys of the leaves (bottom row of the tree).\n"
-    "\tv -- Toggle output of pointer addresses (\"verbose\") in tree and "
-           "leaves.\n"
+    "\tp -- Print the B+ tree.\n"
     "\tq -- Quit. (Or use Ctl-D.)\n"
     "\t? -- Print this help message.\n");
 }
 
-// Master find function.
-void find(key_t key) {
+void print_tree(void){
+    db_print_tree();
+}
 
+// Master find function.
+void find(key_t key, bool verbose){
+    char value[120];
+    if (db_find(key, value) == 0)
+        printf("find key %lld -> value %s\n", key, value);
+    else
+        printf("find not key %lld\n", key);
+    if (verbose) db_print_tree();
 }
 
 // Master insertion function.
-void insert(key_t key, char * value ) {
-
+void insert(key_t key, char * value, bool verbose){
+    db_insert(key, value);
+    if (verbose) db_print_tree();
 }
 
 // Master deletion function.
-void delete(key_t key) {
-
+void delete(key_t key, bool verbose) {
+    db_delete(key);
+    if (verbose) db_print_tree();
 }
 
 //void destroy_tree_nodes(node * root) {
@@ -57,4 +61,3 @@ void delete(key_t key) {
 //    destroy_tree_nodes(root);
 //    return NULL;
 //}
-
