@@ -36,6 +36,17 @@ pagenum_t db_find_leaf(key_t key);
 
 // Find the matching record and delete it if found
 int db_delete(key_t key);
+int db_delete_entry(pagenum_t key_leaf_pagenum, key_t key);
+pagenum_t db_remove_entry_from_page(pagenum_t n_pagenum, page_t * n_page, key_t key);
+int db_adjust_root(pagenum_t root_pagenum);
+int db_get_neighbor_index(pagenum_t n_pagenum, page_t * n_page, pagenum_t parent_pagenum, page_t * parent);
+int db_coalesce_nodes(pagenum_t parent_pagenum, page_t * parent, pagenum_t n_pagenum, page_t * n_page,
+                      pagenum_t neighbor_pagenum, page_t * neighbor, int neighbor_index,
+                      key_t k_prime);
+int db_redistribute_nodes(pagenum_t parent_pagenum, page_t * parent,
+                          pagenum_t n_pagenum, page_t * n_page,
+                          pagenum_t neighbor_pagenum, page_t * neighbor,
+                          int neighbor_index, int k_prime_index, key_t k_prime);
 
 void db_print_tree();
 int IsEmpty();

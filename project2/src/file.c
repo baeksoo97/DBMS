@@ -99,15 +99,18 @@ pagenum_t file_alloc_page(){
 void file_free_page(pagenum_t pagenum){
     header_page = header();
 
-    page_t * free_page = make_page();
-    free_page->f.next_free_pagenum = header_page->h.free_pagenum;
-    header_page->h.free_pagenum = pagenum;
-//    printf("file_free_page %lld\n", header_page->h.free_pagenum);
+    page_t * page = make_page();
 
-    file_write_page(pagenum, free_page);
+    page->f.next_free_pagenum = header_page->h.free_pagenum;
+    header_page->h.free_pagenum = pagenum;
+
+    printf("file_free_page header->free_page %lld, free_pagenum %lld, free_pagenum->next %lld\n",
+           header_page->h.free_pagenum, pagenum, page->f.next_free_pagenum);
+
+    file_write_page(pagenum, page);
     file_write_page(0, header_page);
 
-    free(free_page);
+    free_page(page);
 }
 
 // Read an on-disk page into the in-memory page structure(dest)

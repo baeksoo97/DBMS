@@ -28,8 +28,17 @@ int main( int argc, char ** argv ) {
             exit(EXIT_FAILURE);
         }
         while (!feof(fp)) {
-            fscanf(fp, "%lld %s\n", &key, value);
-            db_insert(key, value);
+            char command;
+            fscanf(fp, "%c ", &command);
+//            printf("%c\n", command);
+            if (command == 'i'){
+                fscanf(fp, "%lld %s\n", &key, value);
+                db_insert(key, value);
+            }
+            else if (command == 'd'){
+                fscanf(fp, "%lld\n", &key);
+                db_delete(key);
+            }
 //            db_print_tree();
         }
         fclose(fp);
