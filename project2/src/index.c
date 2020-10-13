@@ -74,7 +74,6 @@ int find(key_t key, char * ret_val){
     }
 }
 
-
 // INSERTION.
 
 /* Creates a new record to hold the value
@@ -887,7 +886,7 @@ int delete_entry(pagenum_t n_pagenum, key_t key){
         return coalesce_nodes(parent_pagenum, parent, n_pagenum, n_page, neighbor_pagenum,
                               neighbor, neighbor_index, k_prime);
 
-        /* Redistribution. */
+    /* Redistribution. */
     else
         return redistribute_nodes(parent_pagenum, parent, n_pagenum, n_page, neighbor_pagenum,
                                   neighbor, neighbor_index, k_prime_index, k_prime);
@@ -935,7 +934,7 @@ int delete(key_t key){
 
 // OUTPUT.
 
-pagenum_t queue[MAX];
+pagenum_t queue[QUEUE_SIZE];
 int front = -1;
 int rear = -1;
 int q_size = 0;
@@ -946,13 +945,13 @@ int is_empty(void){
 }
 
 int is_full(void){
-    if ((rear + 1) % MAX == front) return 1;
+    if ((rear + 1) % QUEUE_SIZE == front) return 1;
     else return 0;
 }
 
 void enqueue(pagenum_t pagenum){
     if (!is_full()){
-        rear = (rear + 1) % MAX;
+        rear = (rear + 1) % QUEUE_SIZE;
         queue[rear] = pagenum;
         q_size++;
     }
@@ -962,7 +961,7 @@ pagenum_t dequeue(void){
     if (is_empty()) return 0;
     else{
         q_size--;
-        front = (front + 1) % MAX;
+        front = (front + 1) % QUEUE_SIZE;
         return queue[front];
     }
 }

@@ -5,14 +5,7 @@
 // #define WINDOWS
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
-#include <string.h>
 #include "index.h"
-#ifdef WINDOWS
-#define bool char
-#define false 0
-#define true 1
-#endif
 
 // FUNCTION PROTOTYPES.
 
@@ -33,4 +26,4 @@ void db_print_tree(void);
 // Second message to the user.
 void usage(void);
 
-#endif /* __API_H__*/
+#endif // __API_H__
