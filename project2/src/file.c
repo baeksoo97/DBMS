@@ -36,15 +36,6 @@ page_t * header(){
     return header_page;
 }
 
-void file_init_root(const page_t * root){
-    pagenum_t root_pagenum = file_alloc_page();
-
-    header_page->h.root_pagenum = root_pagenum;
-
-    file_write_page(root_pagenum, root);
-    file_write_page(0, header_page);
-}
-
 // Allocate an on-disk page from the free page list
 pagenum_t file_alloc_page(){
     pagenum_t pagenum;

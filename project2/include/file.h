@@ -82,8 +82,6 @@ void file_init_header(int isExist);
 // Read header from file
 page_t * header();
 
-void file_init_root(const page_t * root);
-
 // Allocate an on-disk page from the free page list
 pagenum_t file_alloc_page();
 

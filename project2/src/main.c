@@ -28,14 +28,17 @@ int main( int argc, char ** argv ){
             fscanf(fp, "%c ", &instruction);
             if (instruction == 'i'){
                 fscanf(fp, "%lld %s\n", &key, value);
+                printf("insert %lld %s\n", key, value);
                 insert(key, value, false);
             }
             else if (instruction == 'd'){
                 fscanf(fp, "%lld\n", &key);
+                printf("delete %lld\n", key);
                 delete(key, false);
             }
             else if (instruction == 'f'){
                 fscanf(fp, "%lld\n", &key);
+                printf("find %lld\n", key);
                 find(key, false);
             }
         }

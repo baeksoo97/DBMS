@@ -383,7 +383,7 @@ int db_insert_into_page_after_splitting(pagenum_t old_pagenum, page_t * old_page
      */
     split = db_cut(INTERNAL_ORDER - 1);
 
-    new_page = make_page();
+    new_page = make_internal_page();
     new_pagenum = file_alloc_page();
     old_page->g.num_keys = 0;
     for (i = 0; i < split; i++){
@@ -472,9 +472,12 @@ int db_find(key_t key, char * ret_val){
     for (i = 0; i < leaf->g.num_keys; i++){
         if (leaf->g.record[i].key == key) break;
     }
-    if (i == leaf->g.num_keys)
+    if (i == leaf->g.num_keys){
+        free_page(leaf);
         return -1;
+    }
     else{
+        free_page(leaf);
         strcpy(ret_val, leaf->g.record[i].value);
         return 0;
     }
