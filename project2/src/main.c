@@ -1,7 +1,7 @@
-#include "bpt.h"
+#include "api.h"
 #include "file.h"
 #include "dsm.h"
-#include "db.h"
+#include "index.h"
 
 // MAIN
 
@@ -29,21 +29,21 @@ int main( int argc, char ** argv ){
             if (instruction == 'i'){
                 fscanf(fp, "%lld %s\n", &key, value);
                 printf("insert %lld %s\n", key, value);
-                insert(key, value, false);
+                db_insert(key, value);
             }
             else if (instruction == 'd'){
                 fscanf(fp, "%lld\n", &key);
                 printf("delete %lld\n", key);
-                delete(key, false);
+                db_delete(key);
             }
             else if (instruction == 'f'){
                 fscanf(fp, "%lld\n", &key);
                 printf("find %lld\n", key);
-                find(key, false);
+                db_find(key, value);
             }
         }
         fclose(fp);
-        print_tree();
+        db_print_tree();
     }
 
     printf("> ");
@@ -55,22 +55,25 @@ int main( int argc, char ** argv ){
             break;
         case 'd':
             scanf("%lld", &key);
-            delete(key, true);
+            db_delete(key);
+            db_print_tree();
             break;
         case 'i':
             scanf("%lld %s", &key, value);
-            insert(key, value, true);
+            db_insert(key, value);
+            db_print_tree();
             break;
         case 'f':
             scanf("%lld", &key);
-            find(key, true);
+            db_find(key, value);
+            db_print_tree();
             break;
         case 'p':
-            print_tree();
+            db_print_tree();
             break;
         case 'x':
             // make it empty
-            print_tree();
+            db_print_tree();
             break;
         case 'q':
             while (getchar() != (int)'\n');

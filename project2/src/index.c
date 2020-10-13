@@ -1,48 +1,16 @@
-#include "db.h"
-
-// Open existing data file using 'pathname' or create one if not existed
-int open_table(const char * pathname){
-    int fd;
-    if (!access(pathname, F_OK)){
-        // file exists
-        fd = open(pathname, O_RDWR | O_SYNC, 0644); // open, read, write
-        if (fd == 0){
-            printf("Error : open_table\n");
-            return -1;
-        }
-        printf("open already exist one : %d\n", fd);
-        file_id = fd;
-        file_init_header(1);
-    }
-    else{
-        // file doesn't exist
-        fd = open(pathname, O_CREAT | O_RDWR | O_SYNC, 0644); // create new, read, write
-        if (fd == 0){
-            printf("Error : open_table\n");
-            return -1;
-        }
-        printf("create new one : %d\n", fd);
-        file_id = fd;
-        file_init_header(0);
-    }
-
-    return fd;
-}
-
-//int close_table(const char * pathname, int fd){
-    // close(fd);
-//}
+#include "index.h"
 
 // INSERTION.
 
-// Insert input 'key/value' (record) to data file at the right place
-int db_insert(key_t key, char * value){
+
+// Master insertion function.
+int insert(key_t key, char * value){
     record * pointer;
     pagenum_t leaf_pagenum;
     page_t * leaf;
 
     // The current implementation ignores duplicates.
-    if (db_find(key, value) == 0){
+    if (find(key, value) == 0){
         printf("value find %s\n", value);
         return -1;
     }
@@ -74,6 +42,71 @@ int db_insert(key_t key, char * value){
     // Case: leaf must be split.
     return db_insert_into_leaf_after_splitting(leaf_pagenum, leaf, key, pointer);
 }
+
+// Master find function.
+int find(key_t key, char * ret_val){
+    int i;
+    page_t * leaf;
+    pagenum_t leaf_pagenum = db_find_leaf(key);
+    if (leaf_pagenum == -1){
+        return -1;
+    }
+
+    leaf = make_page();
+    file_read_page(leaf_pagenum, leaf);
+    for (i = 0; i < leaf->g.num_keys; i++){
+        if (leaf->g.record[i].key == key) break;
+    }
+    if (i == leaf->g.num_keys){
+        free_page(leaf);
+        return -1;
+    }
+    else{
+        free_page(leaf);
+        strcpy(ret_val, leaf->g.record[i].value);
+        return 0;
+    }
+}
+
+// Master deletion function.
+int delete(key_t key){
+    pagenum_t key_leaf_pagenum;
+    char * value;
+    int key_found;
+
+    value = malloc(120 * sizeof(char));
+    key_found = find(key, value);
+    key_leaf_pagenum = db_find_leaf(key);
+    free(value);
+
+    printf("key_found %d key_leaf_pagenum %lld\n", key_found, key_leaf_pagenum);
+    if (key_found != -1 && key_leaf_pagenum != -1){
+        return db_delete_entry(key_leaf_pagenum, key);
+    }
+    else{
+        return -1;
+    }
+}
+
+//void destroy_tree_nodes(node * root) {
+//    int i;
+//    if (root->is_leaf)
+//        for (i = 0; i < root->num_keys; i++)
+//            free(root->pointers[i]);
+//    else
+//        for (i = 0; i < root->num_keys + 1; i++)
+//            destroy_tree_nodes(root->pointers[i]);
+//    free(root->pointers);
+//    free(root->keys);
+//    free(root);
+//}
+//
+//
+//node * destroy_tree(node * root) {
+//    destroy_tree_nodes(root);
+//    return NULL;
+//}
+
 
 
 /* Creates a new record to hold the value
@@ -454,31 +487,6 @@ int db_get_left_index(page_t * parent, pagenum_t left_pagenum){
 
 // FIND.
 
-// Find the record containing input 'key'
-int db_find(key_t key, char * ret_val){
-    int i;
-    page_t * leaf;
-    pagenum_t leaf_pagenum = db_find_leaf(key);
-    if (leaf_pagenum == -1){
-        return -1;
-    }
-
-    leaf = make_page();
-    file_read_page(leaf_pagenum, leaf);
-    for (i = 0; i < leaf->g.num_keys; i++){
-        if (leaf->g.record[i].key == key) break;
-    }
-    if (i == leaf->g.num_keys){
-        free_page(leaf);
-        return -1;
-    }
-    else{
-        free_page(leaf);
-        strcpy(ret_val, leaf->g.record[i].value);
-        return 0;
-    }
-}
-
 /* Traces the path from the root to a leaf, searching by key.
  * Returns the pagenum containing the given key.
  */
@@ -517,25 +525,6 @@ pagenum_t db_find_leaf(key_t key){
 
 // DELETION.
 
-// Find the matching record and delete it if found
-int db_delete(key_t key){
-    pagenum_t key_leaf_pagenum;
-    char * value;
-    int key_found;
-
-    value = malloc(120 * sizeof(char));
-    key_found = db_find(key, value);
-    key_leaf_pagenum = db_find_leaf(key);
-    free(value);
-
-    printf("key_found %d key_leaf_pagenum %lld\n", key_found, key_leaf_pagenum);
-    if (key_found != -1 && key_leaf_pagenum != -1){
-        return db_delete_entry(key_leaf_pagenum, key);
-    }
-    else{
-        return -1;
-    }
-}
 
 /* Deletes an entry from the B+ tree.
  * Removes the record and its key and pointer
@@ -972,7 +961,7 @@ pagenum_t db_dequeue(){
 
 // Print
 
-void db_print_tree(){
+void print_tree(void){
     int i = 0;
     page_t * page = make_page();
     header_page = header();

@@ -9,11 +9,12 @@
 
 #define MAX 1000
 
-// Open existing data file using 'pathname' or create one if not existed
-int open_table(const char *pathname);
+void print_tree(void);
+int insert(key_t key, char * value);
+int find(key_t key, char * ret_val);
+int delete(key_t key);
 
-// Insert input 'key/value' (record) to data file at the right place
-int db_insert(key_t key, char * value);
+
 record * make_record(key_t key, char * value);
 page_t * make_general_page(void);
 page_t * make_internal_page(void);
@@ -30,12 +31,8 @@ int db_insert_into_page_after_splitting(pagenum_t old_pagenum, page_t * old_page
 int db_get_left_index(page_t * parent, pagenum_t left_pagenum);
 int db_cut(int length);
 
-// Find the record containing input 'key'
-int db_find(key_t key, char * ret_val);
 pagenum_t db_find_leaf(key_t key);
 
-// Find the matching record and delete it if found
-int db_delete(key_t key);
 int db_delete_entry(pagenum_t key_leaf_pagenum, key_t key);
 pagenum_t db_remove_entry_from_page(pagenum_t n_pagenum, page_t * n_page, key_t key);
 int db_adjust_root(pagenum_t root_pagenum);
