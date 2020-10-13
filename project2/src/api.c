@@ -1,5 +1,3 @@
-#define Version "1.14"
-
 #include "api.h"
 
 // FUNCTION DEFINITIONS.

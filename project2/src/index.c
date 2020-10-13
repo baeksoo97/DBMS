@@ -1,131 +1,9 @@
 #include "index.h"
 
-
 // FUNCTION DEFINITIONS.
 
-// OUTPUT.
 
-pagenum_t queue[MAX];
-int front = -1;
-int rear = -1;
-int q_size = 0;
-
-int is_empty(void){
-    if (front == rear) return 1;
-    else return 0;
-}
-
-int is_full(void){
-    if ((rear + 1) % MAX == front) return 1;
-    else return 0;
-}
-
-void enqueue(pagenum_t pagenum){
-    if (!is_full()){
-        rear = (rear + 1) % MAX;
-        queue[rear] = pagenum;
-        q_size++;
-    }
-}
-
-pagenum_t dequeue(void){
-    if (is_empty()) return 0;
-    else{
-        q_size--;
-        front = (front + 1) % MAX;
-        return queue[front];
-    }
-}
-
-void print_tree(void){
-    int i = 0;
-    page_t * page = make_page();
-    header_page = header();
-    if (header_page->h.root_pagenum == 0){
-        printf("Tree is empty\n");
-        printf("----------\n");
-        return;
-    }
-    enqueue(header_page->h.root_pagenum);
-
-    while (!is_empty()){
-        int temp_size = q_size;
-
-        while (temp_size){
-            pagenum_t pagenum = dequeue();
-            printf("pagenum %lld ",pagenum);
-            file_read_page(pagenum, page);
-
-            if (page->g.is_leaf){
-                printf("leaf : ");
-                for (i = 0; i < page->g.num_keys; i++){
-                    printf("(%lld, %s) ", page->g.record[i].key, page->g.record[i].value);
-                }
-                printf(" | ");
-            }
-
-            else {
-                printf("internal : ");
-                if (page->g.num_keys > 0){
-                    printf("[%llu] ", page->g.next);
-                    enqueue(page->g.next);
-                }
-                for (i = 0; i < page->g.num_keys; i++){
-                    printf("%lld [%llu] ", page->g.entry[i].key, page->g.entry[i].pagenum);
-                    enqueue(page->g.entry[i].pagenum);
-                }
-                printf(" | ");
-            }
-
-            temp_size--;
-        }
-        printf("\n");
-    }
-
-//    enqueue(header_page->h.root_pagenum);
-
-    printf("----------\n");
-//    printf("\n");
-
-    while (!is_empty()){
-        int temp_size = q_size;
-
-        while (temp_size){
-            pagenum_t pagenum = dequeue();
-
-            file_read_page(pagenum, page);
-
-            if (page->g.is_leaf){
-//                printf("leaf pagenum : %llu, parent : %llu, is_leaf : %d, num keys : %d, right sibling : %llu",
-//                       pagenum, page->g.parent, page->g.is_leaf, page->g.num_keys, page->g.next);
-//                printf(" | ");
-            }
-            else{
-//                printf("internal pagenum : %llu, parent : %llu, is_leaf : %d, num keys : %d, one more : %llu",
-//                       pagenum, page->g.parent, page->g.is_leaf, page->g.num_keys, page->g.next);
-
-                enqueue(page->g.next);
-                for (i = 0; i < page->g.num_keys; i++){
-                    enqueue(page->g.entry[i].pagenum);
-                }
-//                if (i == internal_order - 1){
-//                    enqueue(page->p.one_more_pagenum);
-//                }
-//                else {
-//                    enqueue(page->p.i_records[i].pagenum);
-//                }
-
-                printf(" | ");
-            }
-
-            temp_size--;
-        }
-//        printf("\n");
-    }
-
-//    printf("\n");
-    free_page(page);
-}
+// UTILITY.
 
 
 // FIND.
@@ -192,19 +70,6 @@ int find(key_t key, char * ret_val){
 }
 
 
-// UTILITY.
-
-/* Finds the appropriate place to
- * split a page that is too big into two.
- */
-int cut(int length){
-    if (length % 2 == 0)
-        return length / 2;
-    else
-        return length / 2 + 1;
-}
-
-
 // INSERTION.
 
 /* Creates a new record to hold the value
@@ -250,6 +115,16 @@ page_t * make_leaf_page(void){
 
     leaf->g.is_leaf = 1;
     return leaf;
+}
+
+/* Finds the appropriate place to
+ * split a page that is too big into two.
+ */
+int cut(int length){
+    if (length % 2 == 0)
+        return length / 2;
+    else
+        return length / 2 + 1;
 }
 
 /* Helper function used in insert_into_parent
@@ -1051,3 +926,128 @@ int delete(key_t key){
 //    destroy_tree_nodes(root);
 //    return NULL;
 //}
+
+
+// OUTPUT.
+
+pagenum_t queue[MAX];
+int front = -1;
+int rear = -1;
+int q_size = 0;
+
+int is_empty(void){
+    if (front == rear) return 1;
+    else return 0;
+}
+
+int is_full(void){
+    if ((rear + 1) % MAX == front) return 1;
+    else return 0;
+}
+
+void enqueue(pagenum_t pagenum){
+    if (!is_full()){
+        rear = (rear + 1) % MAX;
+        queue[rear] = pagenum;
+        q_size++;
+    }
+}
+
+pagenum_t dequeue(void){
+    if (is_empty()) return 0;
+    else{
+        q_size--;
+        front = (front + 1) % MAX;
+        return queue[front];
+    }
+}
+
+void print_tree(void){
+    int i = 0;
+    page_t * page = make_page();
+    header_page = header();
+    if (header_page->h.root_pagenum == 0){
+        printf("Tree is empty\n");
+        printf("----------\n");
+        return;
+    }
+    enqueue(header_page->h.root_pagenum);
+
+    while (!is_empty()){
+        int temp_size = q_size;
+
+        while (temp_size){
+            pagenum_t pagenum = dequeue();
+            printf("pagenum %lld ",pagenum);
+            file_read_page(pagenum, page);
+
+            if (page->g.is_leaf){
+                printf("leaf : ");
+                for (i = 0; i < page->g.num_keys; i++){
+                    printf("(%lld, %s) ", page->g.record[i].key, page->g.record[i].value);
+                }
+                printf(" | ");
+            }
+
+            else {
+                printf("internal : ");
+                if (page->g.num_keys > 0){
+                    printf("[%llu] ", page->g.next);
+                    enqueue(page->g.next);
+                }
+                for (i = 0; i < page->g.num_keys; i++){
+                    printf("%lld [%llu] ", page->g.entry[i].key, page->g.entry[i].pagenum);
+                    enqueue(page->g.entry[i].pagenum);
+                }
+                printf(" | ");
+            }
+
+            temp_size--;
+        }
+        printf("\n");
+    }
+
+//    enqueue(header_page->h.root_pagenum);
+
+    printf("----------\n");
+//    printf("\n");
+
+    while (!is_empty()){
+        int temp_size = q_size;
+
+        while (temp_size){
+            pagenum_t pagenum = dequeue();
+
+            file_read_page(pagenum, page);
+
+            if (page->g.is_leaf){
+//                printf("leaf pagenum : %llu, parent : %llu, is_leaf : %d, num keys : %d, right sibling : %llu",
+//                       pagenum, page->g.parent, page->g.is_leaf, page->g.num_keys, page->g.next);
+//                printf(" | ");
+            }
+            else{
+//                printf("internal pagenum : %llu, parent : %llu, is_leaf : %d, num keys : %d, one more : %llu",
+//                       pagenum, page->g.parent, page->g.is_leaf, page->g.num_keys, page->g.next);
+
+                enqueue(page->g.next);
+                for (i = 0; i < page->g.num_keys; i++){
+                    enqueue(page->g.entry[i].pagenum);
+                }
+//                if (i == internal_order - 1){
+//                    enqueue(page->p.one_more_pagenum);
+//                }
+//                else {
+//                    enqueue(page->p.i_records[i].pagenum);
+//                }
+
+                printf(" | ");
+            }
+
+            temp_size--;
+        }
+//        printf("\n");
+    }
+
+//    printf("\n");
+    free_page(page);
+}
