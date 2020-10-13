@@ -355,11 +355,6 @@ int insert_into_leaf_after_splitting(pagenum_t leaf_pagenum, page_t * leaf, key_
     new_leaf->g.next = leaf->g.next;
     leaf->g.next = new_leaf_pagenum;
 
-//    for(i = leaf->g.num_keys; i < LEAF_ORDER; i++)
-//        leaf->g.record + i = NULL;
-//    for (i = new_leaf->g.num_keys; i < LEAF_ORDER; i++)
-//        new_leaf->g.record + i = NULL;
-
     new_leaf->g.parent = leaf->g.parent;
     new_key = new_leaf->g.record[0].key;
 
@@ -554,11 +549,11 @@ int redistribute_nodes(pagenum_t parent_pagenum, page_t * parent,
             parent->g.entry[k_prime_index].key = n_page->g.record[0].key;
         }
     }
-        /* Case: n is the leftmost child.
-         * Take a key-pointer pair from the neighbor to the right.
-         * Move the neighbor's leftmost key-pointer pair
-         * to n's rightmost position.
-         */
+    /* Case: n is the leftmost child.
+     * Take a key-pointer pair from the neighbor to the right.
+     * Move the neighbor's leftmost key-pointer pair
+     * to n's rightmost position.
+     */
     else{
         split = cut(neighbor->g.num_keys);
         if (!n_page->g.is_leaf){
@@ -800,15 +795,6 @@ pagenum_t remove_entry_from_page(pagenum_t n_pagenum, page_t * n_page, key_t key
 
     // One key fewer.
     n_page->g.num_keys--;
-//    printf("g.num_keys %u\n", n_page->g.num_keys);
-    // Set the other pointers to NULL for tidiness.
-    // A leaf uses the last pointer to point to the next leaf.
-//    if (n->is_leaf)
-//        for (i = n->num_keys; i < order - 1; i++)
-//            n->pointers[i] = NULL;
-//    else
-//        for (i = n->num_keys + 1; i < order; i++)
-//            n->pointers[i] = NULL;
 
     file_write_page(n_pagenum, n_page);
 
@@ -911,26 +897,6 @@ int delete(key_t key){
         return -1;
     }
 }
-
-//void destroy_tree_nodes(node * root) {
-//    int i;
-//    if (root->is_leaf)
-//        for (i = 0; i < root->num_keys; i++)
-//            free(root->pointers[i]);
-//    else
-//        for (i = 0; i < root->num_keys + 1; i++)
-//            destroy_tree_nodes(root->pointers[i]);
-//    free(root->pointers);
-//    free(root->keys);
-//    free(root);
-//}
-//
-//
-//node * destroy_tree(node * root) {
-//    destroy_tree_nodes(root);
-//    return NULL;
-//}
-
 
 // OUTPUT.
 
