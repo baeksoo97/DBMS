@@ -44,7 +44,7 @@ int file_open(const char * pathname){
 
     if (!access(pathname, F_OK)){
         // file exists
-        fd = open(pathname, O_RDWR | O_SYNC, 0644); // open, read, write
+        fd = open(pathname, O_RDWR, 0644); // open, read, write
         if (fd == 0){
             printf("Error : file_open\n");
             return -1;
@@ -55,7 +55,7 @@ int file_open(const char * pathname){
     }
     else{
         // file doesn't exist
-        fd = open(pathname, O_CREAT | O_RDWR | O_SYNC, 0644); // create new, read, write
+        fd = open(pathname, O_CREAT | O_RDWR, 0644); // create new, read, write
         if (fd == 0){
             printf("Error : file_open\n");
             return -1;
@@ -157,6 +157,7 @@ void file_read_page(pagenum_t pagenum, page_t* dest){
 void file_write_page(pagenum_t pagenum, const page_t* src){
     lseek(file_id, pagenum * PAGE_SIZE, SEEK_SET);
     ssize_t write_size = write(file_id, src, sizeof(*src));
+    fsync(file_id);
 
     if (write_size != PAGE_SIZE){
         printf("ERROR WRITE_PAGE : pagenum %lld, write size %zd\n", pagenum, write_size);
