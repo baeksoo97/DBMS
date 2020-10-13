@@ -11,10 +11,8 @@
 #define FREE_PAGE_RESERVED_SIZE 4088
 #define PAGE_HEADER_RESERVED_SIZE 104
 #define VALUE_SIZE 120
-#define INTERNAL_ORDER 3
-#define LEAF_ORDER 3
-//#define INTERNAL_ORDER 248
-//#define LEAF_ORDER 31
+#define INTERNAL_ORDER 248
+#define LEAF_ORDER 31
 
 // data types
 typedef uint64_t key_t;

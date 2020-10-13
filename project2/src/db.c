@@ -136,12 +136,11 @@ int db_insert_new_tree(key_t key, record * pointer){
     file_write_page(root_pagenum, root);
     file_write_page(0, header_page);
 
-    printf("db_insert_new_tree root (%lld %s)\n", root->g.record[0].key, root->g.record[0].value);
+//    printf("db_insert_new_tree root (%lld %s)\n", root->g.record[0].key, root->g.record[0].value);
 
     free_page(root);
     free(pointer);
-    return 0; // if success
-    // return -1; if not success
+    return 0;
 }
 
 /* Inserts a new pointer to a record and its corresponding
@@ -149,7 +148,7 @@ int db_insert_new_tree(key_t key, record * pointer){
  * Returns the altered leaf.
  */
 int db_insert_into_leaf(pagenum_t leaf_pagenum, page_t * leaf, key_t key, record * pointer){
-    printf("db_insert_into_leaf\n");
+//    printf("db_insert_into_leaf\n");
     int i, insertion_point;
 
     insertion_point = 0;
@@ -176,7 +175,7 @@ int db_insert_into_leaf(pagenum_t leaf_pagenum, page_t * leaf, key_t key, record
  * in half.
  */
 int db_insert_into_leaf_after_splitting(pagenum_t leaf_pagenum, page_t * leaf, key_t key, record * pointer){
-    printf("db_insert_into_leaf_after_splitting\n");
+//    printf("db_insert_into_leaf_after_splitting\n");
     record * temp_pointers;
     page_t * new_leaf;
     pagenum_t new_leaf_pagenum;
@@ -245,11 +244,10 @@ int db_insert_into_leaf_after_splitting(pagenum_t leaf_pagenum, page_t * leaf, k
  * Returns the root of the tree after insertion.
  */
 int db_insert_into_parent(pagenum_t left_pagenum, page_t * left, key_t key, pagenum_t right_pagenum, page_t * right){
-    printf("db_insert_into_parent\n");
+//    printf("db_insert_into_parent\n");
     int left_index;
     page_t * parent;
     pagenum_t parent_pagenum = left->g.parent;
-    printf("parent_pagenum %lld\n", parent_pagenum);
 
     // Case 1 : new root.
     if (parent_pagenum == 0)
@@ -262,15 +260,14 @@ int db_insert_into_parent(pagenum_t left_pagenum, page_t * left, key_t key, page
     file_read_page(parent_pagenum, parent);
 
     left_index = db_get_left_index(parent, left_pagenum);
-    printf("left_index %d\n", left_index);
+
+    free_page(left);
+    free_page(right);
 
     // Simple Case 2-1 : the new key fits into the page.
     if (parent->g.num_keys < INTERNAL_ORDER){
-        free_page(left);
-        free_page(right);
         return db_insert_into_page(parent_pagenum, parent, left_index, key, right_pagenum);
     }
-
     // Harder Case 2-2 : split a page in order to preserve the B+tree properties.
     return db_insert_into_page_after_splitting(parent_pagenum, parent, left_index, key, right_pagenum);
 }
@@ -280,7 +277,7 @@ int db_insert_into_parent(pagenum_t left_pagenum, page_t * left, key_t key, page
  * the new root.
  */
 int db_insert_into_new_root(pagenum_t left_pagenum, page_t * left, key_t key, pagenum_t right_pagenum, page_t * right){
-    printf("db_insert_into_new_root\n");
+//    printf("db_insert_into_new_root\n");
     page_t * root = make_internal_page();
     pagenum_t root_pagenum = file_alloc_page();
 
@@ -316,7 +313,7 @@ int db_insert_into_new_root(pagenum_t left_pagenum, page_t * left, key_t key, pa
 int db_insert_into_page(pagenum_t n_pagenum, page_t * n_page,
                         int left_index, key_t key, pagenum_t right_pagenum){
     int i;
-    printf("db_insert_into_node\n");
+//    printf("db_insert_into_node\n");
 
     // Left page is left most.
     if (left_index == -1){
@@ -348,7 +345,7 @@ int db_insert_into_page(pagenum_t n_pagenum, page_t * n_page,
  */
 int db_insert_into_page_after_splitting(pagenum_t old_pagenum, page_t * old_page, int left_index,
                                         key_t key, pagenum_t right_pagenum){
-    printf("db_insert_into_node_after_Splitting\n");
+//    printf("db_insert_into_node_after_Splitting\n");
     int i, j, split;
     key_t k_prime;
     entry * temp_entry;
@@ -400,7 +397,6 @@ int db_insert_into_page_after_splitting(pagenum_t old_pagenum, page_t * old_page
     }
 
     free(temp_entry);
-    file_write_page(old_pagenum, old_page);
 
     new_page->g.parent = old_page->g.parent;
 
@@ -417,13 +413,13 @@ int db_insert_into_page_after_splitting(pagenum_t old_pagenum, page_t * old_page
     }
     free_page(child);
 
+    file_write_page(old_pagenum, old_page);
     file_write_page(new_pagenum, new_page);
 
     /* Insert a new key into the parent of the two
-     * nodes resulting from the split, with
-     * the old node to the left and the new to the right.
+     * pages resulting from the split, with
+     * the old page to the left and the new to the right.
      */
-
     return db_insert_into_parent(old_pagenum, old_page, k_prime, new_pagenum, new_page);
 }
 
@@ -506,7 +502,6 @@ pagenum_t db_find_leaf(key_t key){
             if (key >= page->g.entry[i].key) i++;
             else break;
         }
-        printf("db_find_leaf %d\n", i);
 
         if (i == 0)
             pagenum = page->g.next;
@@ -528,13 +523,12 @@ int db_delete(key_t key){
     char * value;
     int key_found;
 
-    value = (char *)malloc(120 * sizeof(char));
+    value = malloc(120 * sizeof(char));
     key_found = db_find(key, value);
     key_leaf_pagenum = db_find_leaf(key);
     free(value);
 
-    printf("key_found %d\n", key_found);
-    printf("key_leaf_pagenum %lld\n", key_leaf_pagenum);
+    printf("key_found %d key_leaf_pagenum %lld\n", key_found, key_leaf_pagenum);
     if (key_found != -1 && key_leaf_pagenum != -1){
         return db_delete_entry(key_leaf_pagenum, key);
     }
@@ -556,7 +550,7 @@ int db_delete_entry(pagenum_t n_pagenum, key_t key){
     page_t * neighbor;
     pagenum_t parent_pagenum, neighbor_pagenum;
 
-    printf("db_delete_entry %lld, key %lld\n", n_pagenum, key);
+//    printf("db_delete_entry %lld, key %lld\n", n_pagenum, key);
     n_page = make_page();
     file_read_page(n_pagenum, n_page);
 
@@ -566,8 +560,10 @@ int db_delete_entry(pagenum_t n_pagenum, key_t key){
     /* Case:  deletion from the root.
      */
     header_page = header();
-    if (header_page->h.root_pagenum == n_pagenum)
+    if (header_page->h.root_pagenum == n_pagenum){
+        free_page(n_page);
         return db_adjust_root(n_pagenum);
+    }
 
     /* Case:  deletion from a node below the root.
      * (Rest of function body.)
@@ -605,7 +601,7 @@ int db_delete_entry(pagenum_t n_pagenum, key_t key){
 
     neighbor = make_page();
     file_read_page(neighbor_pagenum, neighbor);
-    printf("%d %d %d\n",neighbor->g.num_keys, n_page->g.num_keys, capacity);
+//    printf("%d %d %d\n",neighbor->g.num_keys, n_page->g.num_keys, capacity);
 
     /* Coalescence. */
     if (neighbor->g.num_keys + n_page->g.num_keys < capacity)
@@ -639,7 +635,7 @@ pagenum_t db_remove_entry_from_page(pagenum_t n_pagenum, page_t * n_page, key_t 
 
     // One key fewer.
     n_page->g.num_keys--;
-    printf("g.num_keys %u\n", n_page->g.num_keys);
+//    printf("g.num_keys %u\n", n_page->g.num_keys);
     // Set the other pointers to NULL for tidiness.
     // A leaf uses the last pointer to point to the next leaf.
 //    if (n->is_leaf)
@@ -730,7 +726,7 @@ int db_get_neighbor_index(pagenum_t n_pagenum, page_t * n_page, pagenum_t parent
 int db_coalesce_nodes(pagenum_t parent_pagenum, page_t * parent, pagenum_t n_pagenum, page_t * n_page,
                       pagenum_t neighbor_pagenum, page_t * neighbor, int neighbor_index,
                       key_t k_prime){
-    printf("coalesce\n");
+//    printf("coalesce\n");
     int i, j, neighbor_insertion_index, n_end;
     page_t * tmp;
     pagenum_t tmp_pagenum;
@@ -751,7 +747,8 @@ int db_coalesce_nodes(pagenum_t parent_pagenum, page_t * parent, pagenum_t n_pag
      * n being a leftmost child.
      */
     neighbor_insertion_index = neighbor->g.num_keys;
-    printf("neighbor_insertion_index %d,  n_page num %d\n", neighbor_insertion_index, n_page->g.num_keys);
+//    printf("neighbor_insertion_index %d,  n_page num %d\n", neighbor_insertion_index, n_page->g.num_keys);
+
     /* Case: nonleaf node.
      * Append k_prime and the following pointer.
      * Append all pointers and keys from the neighbor.
@@ -794,12 +791,12 @@ int db_coalesce_nodes(pagenum_t parent_pagenum, page_t * parent, pagenum_t n_pag
             neighbor->g.num_keys++;
             n_page->g.num_keys--;
         }
-        printf("neighbor %d n_page %d\n", neighbor->g.num_keys, n_page->g.num_keys);
+//        printf("neighbor %d n_page %d\n", neighbor->g.num_keys, n_page->g.num_keys);
         neighbor->g.next = n_page->g.next;
     }
 
     file_write_page(neighbor_pagenum, neighbor);
-    printf("neighbor_pagenum %lld, n_pagenum %lld, parent_pagenum %lld \n", neighbor_pagenum, n_pagenum, parent_pagenum);
+//    printf("neighbor_pagenum %lld, n_pagenum %lld, parent_pagenum %lld \n", neighbor_pagenum, n_pagenum, parent_pagenum);
     db_delete_entry(parent_pagenum, k_prime);
 
     file_free_page(n_pagenum);
@@ -819,10 +816,9 @@ int db_redistribute_nodes(pagenum_t parent_pagenum, page_t * parent,
                           pagenum_t n_pagenum, page_t * n_page,
                           pagenum_t neighbor_pagenum, page_t * neighbor,
                           int neighbor_index, int k_prime_index, key_t k_prime){
-    printf("redistribute\n");
+//    printf("redistribute\n");
     int i, j, split, neighbor_end;
     pagenum_t tmp_pagenum;
-
 
     /* Case: n has a neighbor to the left.
      * Pull the neighbor's last key-pointer pair over
@@ -932,9 +928,9 @@ int db_redistribute_nodes(pagenum_t parent_pagenum, page_t * parent,
     file_write_page(neighbor_pagenum, neighbor);
     file_write_page(parent_pagenum, parent);
 
-//    free_page(n_page);
-//    free_page(neighbor);
-//    free_page(parent);
+    free_page(n_page);
+    free_page(neighbor);
+    free_page(parent);
 
     return 0;
 }
@@ -980,13 +976,13 @@ void db_print_tree(){
     int i = 0;
     page_t * page = make_page();
     header_page = header();
-    printf("----------\n");
+//    printf("----------\n");
     if (header_page->h.root_pagenum == 0){
         printf("Tree is empty\n");
+        printf("----------\n");
         return;
     }
     db_enqueue(header_page->h.root_pagenum);
-    printf("\n");
 
     while (!IsEmpty()){
         int temp_size = q_size;
@@ -1022,9 +1018,10 @@ void db_print_tree(){
         printf("\n");
     }
 
-    db_enqueue(header_page->h.root_pagenum);
+//    db_enqueue(header_page->h.root_pagenum);
 
-    printf("\n");
+    printf("----------\n");
+//    printf("\n");
 
     while (!IsEmpty()){
         int temp_size = q_size;
@@ -1035,13 +1032,13 @@ void db_print_tree(){
             file_read_page(pagenum, page);
 
             if (page->g.is_leaf){
-                printf("leaf pagenum : %llu, parent : %llu, is_leaf : %d, num keys : %d, right sibling : %llu",
-                       pagenum, page->g.parent, page->g.is_leaf, page->g.num_keys, page->g.next);
-                printf(" | ");
+//                printf("leaf pagenum : %llu, parent : %llu, is_leaf : %d, num keys : %d, right sibling : %llu",
+//                       pagenum, page->g.parent, page->g.is_leaf, page->g.num_keys, page->g.next);
+//                printf(" | ");
             }
             else{
-                printf("internal pagenum : %llu, parent : %llu, is_leaf : %d, num keys : %d, one more : %llu",
-                       pagenum, page->g.parent, page->g.is_leaf, page->g.num_keys, page->g.next);
+//                printf("internal pagenum : %llu, parent : %llu, is_leaf : %d, num keys : %d, one more : %llu",
+//                       pagenum, page->g.parent, page->g.is_leaf, page->g.num_keys, page->g.next);
 
                 db_enqueue(page->g.next);
                 for (i = 0; i < page->g.num_keys; i++){
@@ -1059,9 +1056,9 @@ void db_print_tree(){
 
             temp_size--;
         }
-        printf("\n");
+//        printf("\n");
     }
 
-    printf("\n");
+//    printf("\n");
     free_page(page);
 }
