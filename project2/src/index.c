@@ -2,9 +2,14 @@
 
 // FUNCTION DEFINITIONS.
 
-
 // UTILITY.
 
+int index_open_table(const char * pathname){
+    int table_id;
+    table_id = file_open(pathname);
+
+    return table_id;
+}
 
 // FIND.
 

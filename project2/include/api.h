@@ -17,7 +17,7 @@
 // FUNCTION PROTOTYPES.
 
 // Open existing data file using 'pathname' or create one if not existed
-int open_table(const char *pathname);
+int open_table(const char * pathname);
 
 // Insert input 'key/value' (record) to data file at the right place
 int db_insert(key_t key, char * value);

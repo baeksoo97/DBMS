@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h> // uint64_t
 #include <unistd.h> // lseek, write, open
+#include <fcntl.h> // open
 
 #define PAGE_SIZE 4096
 #define PAGE_NUM_FOR_RESERVE 1000
@@ -14,7 +15,8 @@
 #define INTERNAL_ORDER 248
 #define LEAF_ORDER 31
 
-// data types
+// Types.
+
 typedef uint64_t key_t;
 typedef uint64_t pagenum_t;
 
@@ -64,9 +66,11 @@ typedef struct page_t {
 } page_t;
 
 // GLOBALS
-extern int file_id;
-extern int table_id;
+
+extern int file_id;;
 extern page_t * header_page;
+
+// FUNCTION PROTOTYPES
 
 // Create a new page
 page_t * make_page();
@@ -79,6 +83,9 @@ void file_init_header(int isExist);
 
 // Read header from file
 page_t * header();
+
+// Try to open file named pathname and init header
+int file_open(const char * pathname);
 
 // Allocate an on-disk page from the free page list
 pagenum_t file_alloc_page();

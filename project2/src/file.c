@@ -1,12 +1,11 @@
 #include "file.h"
 
 int file_id = -1;
-int table_id = -1;
 page_t * header_page = NULL;
 
-/* Creates a new page, which can be adapted
- * to serve as a head, a free, a leaf or an internal page.
- */
+// Function Definition
+
+// Create a new page
 page_t * make_page(){
     page_t * page = malloc(sizeof(page_t));
     if (page == NULL){
@@ -16,10 +15,12 @@ page_t * make_page(){
     return page;
 }
 
+// Free page
 void free_page(page_t * page){
     free(page);
 }
 
+// Initialize header in file
 void file_init_header(int isExist){
     header_page = make_page();
 
@@ -31,9 +32,40 @@ void file_init_header(int isExist){
     }
 }
 
+// Read header from file
 page_t * header(){
     file_read_page(0, header_page);
     return header_page;
+}
+
+// Try to open file named pathname and init header
+int file_open(const char * pathname){
+    int fd;
+
+    if (!access(pathname, F_OK)){
+        // file exists
+        fd = open(pathname, O_RDWR | O_SYNC, 0644); // open, read, write
+        if (fd == 0){
+            printf("Error : file_open\n");
+            return -1;
+        }
+        printf("open already exist one : %d\n", fd);
+        file_id = fd;
+        file_init_header(1);
+    }
+    else{
+        // file doesn't exist
+        fd = open(pathname, O_CREAT | O_RDWR | O_SYNC, 0644); // create new, read, write
+        if (fd == 0){
+            printf("Error : file_open\n");
+            return -1;
+        }
+        printf("create new one : %d\n", fd);
+        file_id = fd;
+        file_init_header(0);
+    }
+
+    return fd;
 }
 
 // Allocate an on-disk page from the free page list

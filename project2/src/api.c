@@ -4,31 +4,8 @@
 
 // Open existing data file using 'pathname' or create one if not existed
 int open_table(const char * pathname){
-    int fd;
-    if (!access(pathname, F_OK)){
-        // file exists
-        fd = open(pathname, O_RDWR | O_SYNC, 0644); // open, read, write
-        if (fd == 0){
-            printf("Error : open_table\n");
-            return -1;
-        }
-        printf("open already exist one : %d\n", fd);
-        file_id = fd;
-        file_init_header(1);
-    }
-    else{
-        // file doesn't exist
-        fd = open(pathname, O_CREAT | O_RDWR | O_SYNC, 0644); // create new, read, write
-        if (fd == 0){
-            printf("Error : open_table\n");
-            return -1;
-        }
-        printf("create new one : %d\n", fd);
-        file_id = fd;
-        file_init_header(0);
-    }
-
-    return fd;
+    int table_id = index_open_table(pathname);
+    return table_id;
 }
 
 //int close_table(const char * pathname, int fd){

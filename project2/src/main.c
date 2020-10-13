@@ -10,6 +10,7 @@ int main( int argc, char ** argv ){
     char data_file[1000];
     FILE * fp;
     char instruction;
+    int table_id;
 
     key_t key;
     char value[120];
@@ -52,6 +53,7 @@ int main( int argc, char ** argv ){
         case 'o':
             scanf("%s", data_file);
             table_id = open_table(data_file);
+            printf("table_id %d\n", table_id);
             break;
         case 'd':
             scanf("%lld", &key);

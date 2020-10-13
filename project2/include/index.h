@@ -2,8 +2,6 @@
 #define __INDEX_H__
 
 #include <stdio.h>
-#include <unistd.h> // access function
-#include <fcntl.h> // open
 #include <string.h> // strcpy, memcpy
 #include "file.h"
 
@@ -12,6 +10,8 @@
 // FUNCTION PROTOTYPES.
 
 // Utility.
+
+int index_open_table(const char * pathname);
 
 // Find.
 
