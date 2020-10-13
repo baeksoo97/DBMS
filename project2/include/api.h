@@ -1,5 +1,5 @@
-#ifndef __BPT_H__
-#define __BPT_H__
+#ifndef __API_H__
+#define __API_H__
 
 // Uncomment the line below if you are compiling on Windows.
 // #define WINDOWS
@@ -33,4 +33,4 @@ void db_print_tree(void);
 // Second message to the user.
 void usage(void);
 
-#endif /* __BPT_H__*/
+#endif /* __API_H__*/
