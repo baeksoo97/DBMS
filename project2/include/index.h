@@ -5,8 +5,7 @@
 #include <string.h> // strcpy, memcpy
 #include "file.h"
 
-#define QUEUE_SIZE 1000
-
+#define QUEUE_SIZE 100000000
 // FUNCTION PROTOTYPES.
 
 // Utility.

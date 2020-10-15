@@ -1,8 +1,4 @@
 #include "api.h"
-#include "file.h"
-#include "dsm.h"
-#include "index.h"
-
 // MAIN
 
 int main( int argc, char ** argv ){
