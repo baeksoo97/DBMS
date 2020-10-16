@@ -88,7 +88,7 @@ record * make_record(key_t key, char * value){
     new_record->key = key;
     strcpy(new_record->value, value);
 
-    printf("new_record(%lld , %s)\n", new_record->key, new_record->value);
+//    printf("new_record(%lld , %s)\n", new_record->key, new_record->value);
     return new_record;
 }
 
