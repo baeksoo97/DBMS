@@ -854,13 +854,14 @@ int delete_entry(pagenum_t n_pagenum, key_t key){
     else
         neighbor_pagenum = parent->g.entry[neighbor_index].pagenum;
 
-    capacity = n_page->g.is_leaf == 1 ? cut(LEAF_ORDER) : cut(INTERNAL_ORDER);
+    capacity = n_page->g.is_leaf == 1 ? LEAF_ORDER : INTERNAL_ORDER;
 
     neighbor = make_page();
     file_read_page(neighbor_pagenum, neighbor);
 
     /* Coalescence. */
-    if (neighbor->g.num_keys + n_page->g.num_keys < capacity)
+    if ((!n_page->g.is_leaf && neighbor->g.num_keys + n_page->g.num_keys < capacity)
+        || n_page->g.is_leaf)
         return coalesce_nodes(parent_pagenum, parent, n_pagenum, n_page, neighbor_pagenum,
                               neighbor, neighbor_index, k_prime);
 
