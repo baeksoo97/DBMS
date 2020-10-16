@@ -45,7 +45,7 @@ int file_open(const char * pathname){
     if (!access(pathname, F_OK)){
         // file exists
         fd = open(pathname, O_RDWR, 0644); // open, read, write
-        if (fd == 0){
+        if (fd == -1){
             printf("Error : file_open\n");
             return -1;
         }
@@ -56,7 +56,7 @@ int file_open(const char * pathname){
     else{
         // file doesn't exist
         fd = open(pathname, O_CREAT | O_RDWR, 0644); // create new, read, write
-        if (fd == 0){
+        if (fd == -1){
             printf("Error : file_open\n");
             return -1;
         }
