@@ -37,11 +37,9 @@ void db_print_tree(void){
 // Second message to the user.
 void usage(void){
     printf("Enter any of the following commands after the prompt > :\n"
-           "\ti <k>  -- Insert <k> (an integer) as both key and value).\n"
+           "\ti <k> <value> -- Insert <k> (an integer) <value> (a string).\n"
            "\tf <k>  -- Find the value under key <k>.\n"
            "\td <k>  -- Delete key <k> and its associated value.\n"
-           "\tx -- Destroy the whole tree.  Start again with an empty tree of the "
-           "same order.\n"
            "\tp -- Print the B+ tree.\n"
            "\tq -- Quit. (Or use Ctl-D.)\n"
            "\t? -- Print this help message.\n");

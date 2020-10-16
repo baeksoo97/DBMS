@@ -23,8 +23,7 @@ pagenum_t find_leaf(key_t key){
 
     header_page = header();
     if (header_page->h.root_pagenum == 0){
-        printf("find_leaf : Empty tree.\n");
-        return -1;
+        return 0;
     }
 
     page = make_page();
@@ -54,7 +53,7 @@ int find(key_t key, char * ret_val){
     int i;
     page_t * leaf;
     pagenum_t leaf_pagenum = find_leaf(key);
-    if (leaf_pagenum == -1){
+    if (leaf_pagenum == 0){
         return -1;
     }
 
@@ -83,7 +82,7 @@ record * make_record(key_t key, char * value){
     record * new_record = (record *)malloc(sizeof(record));
 
     if (new_record == NULL){
-        perror("Record creation.");
+        perror("ERROR MAKE_RECORD : cannot create record");
         exit(EXIT_FAILURE);
     }
     new_record->key = key;
@@ -173,7 +172,7 @@ int insert_into_page_after_splitting(pagenum_t old_pagenum, page_t * old_page, i
      */
     temp_entry = malloc((INTERNAL_ORDER + 1) * sizeof(entry));
     if (temp_entry == NULL){
-        perror("Temporary entry array for splitting nodes.");
+        perror("ERROR INSERT_INTO_PAGE_AFTER_SPLITTING : cannot create temp_entry");
         exit(EXIT_FAILURE);
     }
 
@@ -314,7 +313,7 @@ int insert_into_leaf_after_splitting(pagenum_t leaf_pagenum, page_t * leaf, key_
 
     temp_pointers = malloc((LEAF_ORDER + 1) * sizeof(record));
     if (temp_pointers == NULL){
-        perror("Temporary pointers array.");
+        perror("ERROR INSERT_INTO_LEAF_AFTER_SPLITTING : cannot create temp_pointers");
         exit(EXIT_FAILURE);
     }
 
@@ -439,8 +438,6 @@ int insert_new_tree(key_t key, record * pointer){
     file_write_page(root_pagenum, root);
     file_write_page(0, header_page);
 
-//    printf("insert_new_tree root (%lld %s)\n", root->g.record[0].key, root->g.record[0].value);
-
     free_page(root);
     free(pointer);
     return 0;
@@ -454,7 +451,6 @@ int insert(key_t key, char * value){
 
     // The current implementation ignores duplicates.
     if (find(key, value) == 0){
-        printf("value find %s\n", value);
         return -1;
     }
 
@@ -470,12 +466,12 @@ int insert(key_t key, char * value){
 
     // Case: the tree already exists. (Rest of function body.)
     leaf_pagenum = find_leaf(key);
-    if (leaf_pagenum == -1) return -1;
+    if (leaf_pagenum == 0) {
+        return -1;
+    }
 
     leaf = make_page();
     file_read_page(leaf_pagenum, leaf);
-
-    printf("insert leaf_pagenum %lld, leaf->num_keys %d\n", leaf_pagenum, leaf->g.num_keys);
 
     // Case: leaf has room for key and pointer.
     if (leaf->g.num_keys < LEAF_ORDER){
@@ -643,7 +639,6 @@ int coalesce_nodes(pagenum_t parent_pagenum, page_t * parent, pagenum_t n_pagenu
      * n being a leftmost child.
      */
     neighbor_insertion_index = neighbor->g.num_keys;
-//    printf("neighbor_insertion_index %d,  n_page num %d\n", neighbor_insertion_index, n_page->g.num_keys);
 
     /* Case: nonleaf node.
      * Append k_prime and the following pointer.
@@ -687,12 +682,11 @@ int coalesce_nodes(pagenum_t parent_pagenum, page_t * parent, pagenum_t n_pagenu
             neighbor->g.num_keys++;
             n_page->g.num_keys--;
         }
-//        printf("neighbor %d n_page %d\n", neighbor->g.num_keys, n_page->g.num_keys);
         neighbor->g.next = n_page->g.next;
     }
 
     file_write_page(neighbor_pagenum, neighbor);
-//    printf("neighbor_pagenum %lld, n_pagenum %lld, parent_pagenum %lld \n", neighbor_pagenum, n_pagenum, parent_pagenum);
+
     delete_entry(parent_pagenum, k_prime);
 
     file_free_page(n_pagenum);
@@ -760,7 +754,7 @@ int adjust_root(pagenum_t root_pagenum){
         header_page->h.root_pagenum = new_root_pagenum;
         file_write_page(0, header_page);
     }
-        // If it is a leaf (has no children), then the whole tree is empty.
+    // If it is a leaf (has no children), then the whole tree is empty.
     else{
         header_page = header();
         header_page->h.root_pagenum = 0;
@@ -814,7 +808,6 @@ int delete_entry(pagenum_t n_pagenum, key_t key){
     page_t * neighbor;
     pagenum_t parent_pagenum, neighbor_pagenum;
 
-//    printf("delete_entry %lld, key %lld\n", n_pagenum, key);
     n_page = make_page();
     file_read_page(n_pagenum, n_page);
 
@@ -865,7 +858,6 @@ int delete_entry(pagenum_t n_pagenum, key_t key){
 
     neighbor = make_page();
     file_read_page(neighbor_pagenum, neighbor);
-//    printf("%d %d %d\n",neighbor->g.num_keys, n_page->g.num_keys, capacity);
 
     /* Coalescence. */
     if (neighbor->g.num_keys + n_page->g.num_keys < capacity)
@@ -889,8 +881,7 @@ int delete(key_t key){
     key_leaf_pagenum = find_leaf(key);
     free(value);
 
-    printf("key_found %d key_leaf_pagenum %lld\n", key_found, key_leaf_pagenum);
-    if (key_found != -1 && key_leaf_pagenum != -1){
+    if (key_found != -1 && key_leaf_pagenum != 0){
         return delete_entry(key_leaf_pagenum, key);
     }
     else{
@@ -980,7 +971,6 @@ void print_tree(void){
 //    enqueue(header_page->h.root_pagenum);
 
     printf("----------\n");
-//    printf("\n");
 
     while (!is_empty()){
         int temp_size = q_size;
@@ -1003,21 +993,11 @@ void print_tree(void){
                 for (i = 0; i < page->g.num_keys; i++){
                     enqueue(page->g.entry[i].pagenum);
                 }
-//                if (i == internal_order - 1){
-//                    enqueue(page->p.one_more_pagenum);
-//                }
-//                else {
-//                    enqueue(page->p.i_records[i].pagenum);
-//                }
-
                 printf(" | ");
             }
 
             temp_size--;
         }
-//        printf("\n");
     }
-
-//    printf("\n");
     free_page(page);
 }

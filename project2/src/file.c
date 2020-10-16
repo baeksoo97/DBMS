@@ -9,7 +9,7 @@ page_t * header_page = NULL;
 page_t * make_page(){
     page_t * page = malloc(sizeof(page_t));
     if (page == NULL){
-        perror("Page creation.");
+        perror("ERROR MAKE_PAGE : Page creation.");
         exit(EXIT_FAILURE);
     }
     return page;
@@ -46,7 +46,7 @@ int file_open(const char * pathname){
         // file exists
         fd = open(pathname, O_RDWR, 0644); // open, read, write
         if (fd == -1){
-            printf("Error : file_open\n");
+            perror("ERROR FILE_OPEN : cannot open file\n");
             return -1;
         }
         printf("open already exist one : %d\n", fd);
@@ -57,7 +57,7 @@ int file_open(const char * pathname){
         // file doesn't exist
         fd = open(pathname, O_CREAT | O_RDWR, 0644); // create new, read, write
         if (fd == -1){
-            printf("Error : file_open\n");
+            perror("ERROR FILE_OPEN : cannot create file\n");
             return -1;
         }
         printf("create new one : %d\n", fd);
@@ -86,7 +86,7 @@ pagenum_t file_alloc_page(){
         if (file_size % PAGE_SIZE != 0){
             file_size = (file_size / PAGE_SIZE + 1) * PAGE_SIZE;
             if (ftruncate(file_id, file_size)){
-                printf("Error : it cannot truncate to size %lld\n", file_size);
+                perror("ERROR FILE_ALLOC_PAGE : cannot truncate to size\n");
                 exit(EXIT_FAILURE);
             }
         }

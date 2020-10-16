@@ -67,7 +67,7 @@ typedef struct page_t {
 
 // GLOBALS
 
-extern int file_id;;
+extern int file_id;
 extern page_t * header_page;
 
 // FUNCTION PROTOTYPES

@@ -11,6 +11,8 @@ int main( int argc, char ** argv ){
     key_t key;
     char value[120];
 
+    usage();
+
     if (argc > 1){
         strcpy(input_file, argv[1]);
         fp = fopen(input_file, "r");
@@ -67,10 +69,6 @@ int main( int argc, char ** argv ){
             db_print_tree();
             break;
         case 'p':
-            db_print_tree();
-            break;
-        case 'x':
-            // make it empty
             db_print_tree();
             break;
         case 'q':
