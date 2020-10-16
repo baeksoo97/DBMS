@@ -4,3 +4,5 @@
 /project2/src/*.o
 /project2/lib/*
 /project2/main
+/project2/cmake-build-debug
+/project2/CMakeLists.txt
