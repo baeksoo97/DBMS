@@ -145,7 +145,7 @@ void file_free_page(pagenum_t pagenum){
 // Read an on-disk page into the in-memory page structure(dest)
 void file_read_page(pagenum_t pagenum, page_t* dest){
     lseek(file_id, pagenum * PAGE_SIZE, SEEK_SET);
-    ssize_t read_size = read(file_id, dest, sizeof(*dest));
+    ssize_t read_size = read(file_id, dest, PAGE_SIZE);
 
     if (read_size != PAGE_SIZE){
         printf("ERROR READ_PAGE : pagenum %lld, read size %zd\n", pagenum, read_size);
@@ -156,7 +156,7 @@ void file_read_page(pagenum_t pagenum, page_t* dest){
 // Write an in-memory page(src) to the on-disk page
 void file_write_page(pagenum_t pagenum, const page_t* src){
     lseek(file_id, pagenum * PAGE_SIZE, SEEK_SET);
-    ssize_t write_size = write(file_id, src, sizeof(*src));
+    ssize_t write_size = write(file_id, src, PAGE_SIZE);
     fsync(file_id);
 
     if (write_size != PAGE_SIZE){
