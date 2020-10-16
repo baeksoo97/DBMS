@@ -118,7 +118,7 @@ pagenum_t file_alloc_page(){
     header_page->h.free_pagenum = page->f.next_free_pagenum;
     file_write_page(0, header_page);
 
-    printf("Alloc Page %lld (h.free_pagenum %lld)\n", pagenum, header()->h.free_pagenum);
+    // printf("Alloc Page %lld (h.free_pagenum %lld)\n", pagenum, header()->h.free_pagenum);
 
     free_page(page);
 
@@ -133,8 +133,8 @@ void file_free_page(pagenum_t pagenum){
     page->f.next_free_pagenum = header_page->h.free_pagenum;
     header_page->h.free_pagenum = pagenum;
 
-    printf("file_free_page header->free_page %lld, free_pagenum %lld, free_pagenum->next %lld\n",
-           header_page->h.free_pagenum, pagenum, page->f.next_free_pagenum);
+//    printf("file_free_page header->free_page %lld, free_pagenum %lld, free_pagenum->next %lld\n",
+//           header_page->h.free_pagenum, pagenum, page->f.next_free_pagenum);
 
     file_write_page(pagenum, page);
     file_write_page(0, header_page);
