@@ -20,7 +20,7 @@ void index_close_table(const char * pathname){
 /* Traces the path from the root to a leaf, searching by key.
  * Returns the pagenum containing the given key.
  */
-pagenum_t find_leaf(key_t key){
+pagenum_t find_leaf(k_t key){
     int i;
     page_t * page;
     pagenum_t pagenum;
@@ -53,7 +53,7 @@ pagenum_t find_leaf(key_t key){
 }
 
 // Master find function.
-int find(key_t key, char * ret_val){
+int find(k_t key, char * ret_val){
     int i;
     page_t * leaf;
     pagenum_t leaf_pagenum = find_leaf(key);
@@ -82,8 +82,8 @@ int find(key_t key, char * ret_val){
 /* Creates a new record to hold the value
  * to which a key refers.
  */
-record * make_record(key_t key, char * value){
-    record * new_record = (record *)malloc(sizeof(record));
+struct record * make_record(k_t key, char * value){
+    struct record * new_record = (struct record *)malloc(sizeof(struct record));
 
     if (new_record == NULL){
         perror("ERROR MAKE_RECORD : cannot create record");
@@ -158,11 +158,11 @@ int get_left_index(page_t * parent, pagenum_t left_pagenum){
  * the order, and causing the page to split into two.
  */
 int insert_into_page_after_splitting(pagenum_t old_pagenum, page_t * old_page, int left_index,
-                                        key_t key, pagenum_t right_pagenum){
+                                        k_t key, pagenum_t right_pagenum){
 //    printf("insert_into_node_after_Splitting\n");
     int i, j, split;
-    key_t k_prime;
-    entry * temp_entry;
+    k_t k_prime;
+    struct entry * temp_entry;
     page_t * new_page, * child;
     pagenum_t new_pagenum, child_pagenum;
 
@@ -174,7 +174,7 @@ int insert_into_page_after_splitting(pagenum_t old_pagenum, page_t * old_page, i
      * keys and pointers to the old page and
      * the other half to the new.
      */
-    temp_entry = (entry *)malloc((INTERNAL_ORDER + 1) * sizeof(entry));
+    temp_entry = (struct entry *)malloc((INTERNAL_ORDER + 1) * sizeof(struct entry));
     if (temp_entry == NULL){
         perror("ERROR INSERT_INTO_PAGE_AFTER_SPLITTING : cannot create temp_entry");
         exit(EXIT_FAILURE);
@@ -182,7 +182,7 @@ int insert_into_page_after_splitting(pagenum_t old_pagenum, page_t * old_page, i
 
     for (i = 0, j = 0; i < old_page->g.num_keys; i++, j++){
         if (j == left_index + 1) j++; // to store right page next to the left_index
-        memcpy(temp_entry + j, old_page->g.entry + i, sizeof(entry));
+        memcpy(temp_entry + j, old_page->g.entry + i, sizeof(struct entry));
     }
 
     temp_entry[left_index + 1].key = key;
@@ -198,7 +198,7 @@ int insert_into_page_after_splitting(pagenum_t old_pagenum, page_t * old_page, i
     new_pagenum = file_alloc_page();
     old_page->g.num_keys = 0;
     for (i = 0; i < split; i++){
-        memcpy(old_page->g.entry + i, temp_entry + i, sizeof(entry));
+        memcpy(old_page->g.entry + i, temp_entry + i, sizeof(struct entry));
         old_page->g.num_keys++;
     }
 
@@ -206,7 +206,7 @@ int insert_into_page_after_splitting(pagenum_t old_pagenum, page_t * old_page, i
     new_page->g.next = temp_entry[split].pagenum;
 
     for (++i, j = 0; i < INTERNAL_ORDER + 1; i++, j++){
-        memcpy(new_page->g.entry + j, temp_entry + i, sizeof(entry));
+        memcpy(new_page->g.entry + j, temp_entry + i, sizeof(struct entry));
         new_page->g.num_keys++;
     }
 
@@ -242,19 +242,19 @@ int insert_into_page_after_splitting(pagenum_t old_pagenum, page_t * old_page, i
  * without violating the B+ tree properties.
  */
 int insert_into_page(pagenum_t n_pagenum, page_t * n_page,
-                     int left_index, key_t key, pagenum_t right_pagenum){
+                     int left_index, k_t key, pagenum_t right_pagenum){
     int i;
 //    printf("insert_into_node\n");
 
     // Left page is left most.
     if (left_index == -1){
         for (i = n_page->g.num_keys; i > 0; i--){
-            memcpy(n_page->g.entry + i, n_page->g.entry + (i - 1), sizeof(entry));
+            memcpy(n_page->g.entry + i, n_page->g.entry + (i - 1), sizeof(struct entry));
         }
     }
     else{
         for (i = n_page->g.num_keys; i > left_index; i--){
-            memcpy(n_page->g.entry + i, n_page->g.entry + (i - 1), sizeof(entry));
+            memcpy(n_page->g.entry + i, n_page->g.entry + (i - 1), sizeof(struct entry));
         }
     }
 
@@ -273,7 +273,7 @@ int insert_into_page(pagenum_t n_pagenum, page_t * n_page,
 /* Inserts a new page (leaf or internal node) into the B+ tree.
  * Returns the root of the tree after insertion.
  */
-int insert_into_parent(pagenum_t left_pagenum, page_t * left, key_t key, pagenum_t right_pagenum, page_t * right){
+int insert_into_parent(pagenum_t left_pagenum, page_t * left, k_t key, pagenum_t right_pagenum, page_t * right){
 //    printf("insert_into_parent\n");
     int left_index;
     page_t * parent;
@@ -307,15 +307,15 @@ int insert_into_parent(pagenum_t left_pagenum, page_t * left, key_t key, pagenum
  * the tree's order, causing the leaf to be split
  * in half.
  */
-int insert_into_leaf_after_splitting(pagenum_t leaf_pagenum, page_t * leaf, key_t key, record * pointer){
+int insert_into_leaf_after_splitting(pagenum_t leaf_pagenum, page_t * leaf, k_t key, struct record * pointer){
 //    printf("insert_into_leaf_after_splitting\n");
-    record * temp_pointers;
+    struct record * temp_pointers;
     page_t * new_leaf;
     pagenum_t new_leaf_pagenum;
-    key_t new_key;
+    k_t new_key;
     int insertion_index, split, i, j;
 
-    temp_pointers = (record *)malloc((LEAF_ORDER + 1) * sizeof(record));
+    temp_pointers = (struct record *)malloc((LEAF_ORDER + 1) * sizeof(struct record));
     if (temp_pointers == NULL){
         perror("ERROR INSERT_INTO_LEAF_AFTER_SPLITTING : cannot create temp_pointers");
         exit(EXIT_FAILURE);
@@ -371,7 +371,7 @@ int insert_into_leaf_after_splitting(pagenum_t leaf_pagenum, page_t * leaf, key_
  * key into a leaf.
  * Returns the altered leaf.
  */
-int insert_into_leaf(pagenum_t leaf_pagenum, page_t * leaf, key_t key, record * pointer){
+int insert_into_leaf(pagenum_t leaf_pagenum, page_t * leaf, k_t key, record * pointer){
 //    printf("insert_into_leaf\n");
     int i, insertion_point;
 
@@ -397,7 +397,7 @@ int insert_into_leaf(pagenum_t leaf_pagenum, page_t * leaf, key_t key, record * 
  * and inserts the appropriate key into
  * the new root.
  */
-int insert_into_new_root(pagenum_t left_pagenum, page_t * left, key_t key, pagenum_t right_pagenum, page_t * right){
+int insert_into_new_root(pagenum_t left_pagenum, page_t * left, k_t key, pagenum_t right_pagenum, page_t * right){
 //    printf("insert_into_new_root\n");
     page_t * root = make_internal_page();
     pagenum_t root_pagenum = file_alloc_page();
@@ -428,7 +428,7 @@ int insert_into_new_root(pagenum_t left_pagenum, page_t * left, key_t key, pagen
 }
 
 // First insertion: start a new tree.
-int insert_new_tree(key_t key, record * pointer){
+int insert_new_tree(k_t key, record * pointer){
     page_t * root = make_leaf_page();
     pagenum_t root_pagenum = file_alloc_page();
 
@@ -448,7 +448,7 @@ int insert_new_tree(key_t key, record * pointer){
 }
 
 // Master insertion function.
-int insert(key_t key, char * value){
+int insert(k_t key, char * value){
     record * pointer;
     pagenum_t leaf_pagenum;
     page_t * leaf;
@@ -496,7 +496,7 @@ int insert(key_t key, char * value){
 int redistribute_nodes(pagenum_t parent_pagenum, page_t * parent,
                        pagenum_t n_pagenum, page_t * n_page,
                        pagenum_t neighbor_pagenum, page_t * neighbor,
-                       int neighbor_index, int k_prime_index, key_t k_prime){
+                       int neighbor_index, int k_prime_index, k_t k_prime){
 //    printf("redistribute\n");
     int i, j, split, neighbor_end;
     pagenum_t tmp_pagenum;
@@ -511,7 +511,7 @@ int redistribute_nodes(pagenum_t parent_pagenum, page_t * parent,
             neighbor_end = neighbor->g.num_keys;
 
             for (i = split + 1, j = 0; i < neighbor_end; i++, j++){
-                memcpy(n_page->g.entry + j, neighbor->g.entry + i, sizeof(entry));
+                memcpy(n_page->g.entry + j, neighbor->g.entry + i, sizeof(struct entry));
                 n_page->g.num_keys++;
                 neighbor->g.num_keys--;
             }
@@ -541,7 +541,7 @@ int redistribute_nodes(pagenum_t parent_pagenum, page_t * parent,
             neighbor_end = neighbor->g.num_keys;
 
             for (i = split, j = 0; i < neighbor_end; i++, j++){
-                memcpy(n_page->g.record + j, neighbor->g.record + i, sizeof(record));
+                memcpy(n_page->g.record + j, neighbor->g.record + i, sizeof(struct record));
                 n_page->g.num_keys++;
                 neighbor->g.num_keys--;
             }
@@ -563,7 +563,7 @@ int redistribute_nodes(pagenum_t parent_pagenum, page_t * parent,
 
             neighbor_end = neighbor->g.num_keys;
             for (i = 0, j = 1; i < split - 1; i++, j++){
-                memcpy(n_page->g.entry + j, neighbor->g.entry + i, sizeof(entry));
+                memcpy(n_page->g.entry + j, neighbor->g.entry + i, sizeof(struct entry));
                 n_page->g.num_keys++;
                 neighbor->g.num_keys--;
             }
@@ -573,7 +573,7 @@ int redistribute_nodes(pagenum_t parent_pagenum, page_t * parent,
             neighbor->g.num_keys--;
 
             for (++i, j = 0; i < neighbor_end; i++, j++){
-                memcpy(neighbor->g.entry + j, neighbor->g.entry + i, sizeof(entry));
+                memcpy(neighbor->g.entry + j, neighbor->g.entry + i, sizeof(struct entry));
             }
 
             page_t * tmp = make_page();
@@ -589,12 +589,12 @@ int redistribute_nodes(pagenum_t parent_pagenum, page_t * parent,
             neighbor_end = neighbor->g.num_keys;
 
             for (i = 0, j = 0; i < split; i++, j++){
-                memcpy(n_page->g.record + j, neighbor->g.record + i, sizeof(record));
+                memcpy(n_page->g.record + j, neighbor->g.record + i, sizeof(struct record));
                 n_page->g.num_keys++;
                 neighbor->g.num_keys--;
             }
             for (i = split, j = 0; i < neighbor_end; i++, j++){
-                memcpy(neighbor->g.record + j, neighbor->g.record + i, sizeof(record));
+                memcpy(neighbor->g.record + j, neighbor->g.record + i, sizeof(struct record));
             }
 
             parent->g.entry[k_prime_index].key = neighbor->g.record[0].key;
@@ -621,7 +621,7 @@ int redistribute_nodes(pagenum_t parent_pagenum, page_t * parent,
  */
 int coalesce_nodes(pagenum_t parent_pagenum, page_t * parent, pagenum_t n_pagenum, page_t * n_page,
                       pagenum_t neighbor_pagenum, page_t * neighbor, int neighbor_index,
-                      key_t k_prime){
+                      k_t k_prime){
 //    printf("coalesce\n");
     int i, j, neighbor_insertion_index, n_end;
     page_t * tmp;
@@ -657,7 +657,7 @@ int coalesce_nodes(pagenum_t parent_pagenum, page_t * parent, pagenum_t n_pagenu
         n_end = n_page->g.num_keys;
 
         for (i = neighbor_insertion_index + 1, j = 0; j < n_end; i++, j++){
-            memcpy(neighbor->g.entry + i, n_page->g.entry + j, sizeof(entry));
+            memcpy(neighbor->g.entry + i, n_page->g.entry + j, sizeof(struct entry));
             neighbor->g.num_keys++;
             n_page->g.num_keys--;
         }
@@ -682,7 +682,7 @@ int coalesce_nodes(pagenum_t parent_pagenum, page_t * parent, pagenum_t n_pagenu
     else{
         n_end = n_page->g.num_keys;
         for (i = neighbor_insertion_index, j = 0; j < n_end; i++, j++){
-            memcpy(neighbor->g.record + i, n_page->g.record + j, sizeof(record));
+            memcpy(neighbor->g.record + i, n_page->g.record + j, sizeof(struct record));
             neighbor->g.num_keys++;
             n_page->g.num_keys--;
         }
@@ -772,7 +772,7 @@ int adjust_root(pagenum_t root_pagenum){
     return 0;
 }
 
-pagenum_t remove_entry_from_page(pagenum_t n_pagenum, page_t * n_page, key_t key){
+pagenum_t remove_entry_from_page(pagenum_t n_pagenum, page_t * n_page, k_t key){
     int i;
 
     i = 0;
@@ -781,14 +781,14 @@ pagenum_t remove_entry_from_page(pagenum_t n_pagenum, page_t * n_page, key_t key
         while (n_page->g.record[i].key != key)
             i++;
         for (++i; i < n_page->g.num_keys; i++)
-            memcpy(n_page->g.record + (i - 1), n_page->g.record + i, sizeof(record));
+            memcpy(n_page->g.record + (i - 1), n_page->g.record + i, sizeof(struct record));
     }
     else{
         // Remove (key, pagenum) and shift (key, pagenum) accordingly.
         while (n_page->g.entry[i].key != key)
             i++;
         for (++i; i < n_page->g.num_keys; i++)
-            memcpy(n_page->g.entry + (i - 1), n_page->g.entry + i, sizeof(entry));
+            memcpy(n_page->g.entry + (i - 1), n_page->g.entry + i, sizeof(struct entry));
     }
 
     // One key fewer.
@@ -804,9 +804,9 @@ pagenum_t remove_entry_from_page(pagenum_t n_pagenum, page_t * n_page, key_t key
  * from the leaf, and then makes all appropriate
  * changes to preserve the B+ tree properties.
  */
-int delete_entry(pagenum_t n_pagenum, key_t key){
+int delete_entry(pagenum_t n_pagenum, k_t key){
     int min_keys, neighbor_index, k_prime_index, capacity;
-    key_t k_prime;
+    k_t k_prime;
     page_t * n_page;
     page_t * parent;
     page_t * neighbor;
@@ -876,7 +876,7 @@ int delete_entry(pagenum_t n_pagenum, key_t key){
 }
 
 // Master deletion function.
-int delete_key(key_t key){
+int delete_key(k_t key){
     pagenum_t key_leaf_pagenum;
     char * value;
     int key_found;

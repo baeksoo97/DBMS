@@ -8,7 +8,7 @@ int main( int argc, char ** argv ){
     char instruction;
     int table_id;
 
-    key_t key;
+    k_t key;
     char value[120];
 
     if (argc > 1){

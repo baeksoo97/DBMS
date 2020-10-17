@@ -21,18 +21,18 @@ using namespace std;
 
 // Types.
 
-typedef int64_t key_t;
+typedef int64_t k_t;
 typedef uint64_t pagenum_t;
 
-typedef struct record {
-    key_t key;
+struct record {
+    k_t key;
     char value[VALUE_SIZE];
-} record;
+};
 
-typedef struct entry {
-    key_t key;
+struct entry {
+    k_t key;
     pagenum_t pagenum;
-} entry;
+};
 
 typedef struct header_page_t{
     pagenum_t free_pagenum;
@@ -54,8 +54,8 @@ typedef struct general_page_t{
     pagenum_t next; // internal indicates the first child, leaf page indicates the right sibiling
 
     union{
-        entry entry[INTERNAL_ORDER];
-        record record[LEAF_ORDER];
+        struct entry entry[INTERNAL_ORDER];
+        struct record record[LEAF_ORDER];
     };
 } general_page_t;
 

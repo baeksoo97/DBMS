@@ -20,7 +20,7 @@ void close_table(char * pathname){
 }
 
 // Insert input 'key/value' (record) to data file at the right place
-int db_insert(key_t key, char * value){
+int db_insert(k_t key, char * value){
     if (FILE_ID < 0){
         printf("File is not opened\n");
         return -1;
@@ -30,7 +30,7 @@ int db_insert(key_t key, char * value){
 }
 
 // Find the record containing input 'key'
-int db_find(key_t key, char * ret_val){
+int db_find(k_t key, char * ret_val){
     if (FILE_ID < 0){
         printf("File is not opened\n");
         return -1;
@@ -45,7 +45,7 @@ int db_find(key_t key, char * ret_val){
 }
 
 // Find the matching record and delete it if found
-int db_delete(key_t key){
+int db_delete(k_t key){
     if (FILE_ID < 0){
         printf("File is not opened\n");
         return -1;

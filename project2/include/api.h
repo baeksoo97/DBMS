@@ -16,13 +16,13 @@ int open_table(char * pathname);
 void close_table(char * pathname = (char *)"");
 
 // Insert input 'key/value' (record) to data file at the right place
-int db_insert(key_t key, char * value);
+int db_insert(k_t key, char * value);
 
 // Find the record containing input 'key'
-int db_find(key_t key, char * ret_val);
+int db_find(k_t key, char * ret_val);
 
 // Find the matching record and delete it if found
-int db_delete(key_t key);
+int db_delete(k_t key);
 
 void db_print_tree(void);
 
