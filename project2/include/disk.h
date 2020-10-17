@@ -1,8 +1,8 @@
-#ifndef __DSM_H__
-#define __DSM_H__
+#ifndef __DISK_H__
+#define __DISK_H__
 
 #include <stdlib.h>
 #include <stdio.h>
 void print_dsm();
 
-#endif //__DSM_H__
+#endif //__DISK_H__
