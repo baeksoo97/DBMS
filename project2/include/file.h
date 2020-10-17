@@ -6,6 +6,9 @@
 #include <unistd.h> // lseek, write, open
 #include <fcntl.h> // open
 #include <string.h>
+#include <string>
+#include <map>
+using namespace std;
 
 #define PAGE_SIZE 4096
 #define PAGE_NUM_FOR_RESERVE 10000
@@ -69,6 +72,7 @@ typedef struct page_t {
 // GLOBALS
 
 extern int FILE_ID;
+extern map<string, int> file_list;
 extern page_t * header_page;
 
 // FUNCTION PROTOTYPES

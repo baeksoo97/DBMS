@@ -1,6 +1,7 @@
 #include "file.h"
 
 int FILE_ID = -1;
+map <string, int> file_list;
 page_t * header_page = NULL;
 
 // Function Definition
