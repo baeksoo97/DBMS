@@ -55,7 +55,7 @@ int get_neighbor_index(pagenum_t n_pagenum, page_t * n_page,
 int adjust_root(pagenum_t root_pagenum);
 pagenum_t remove_entry_from_page(pagenum_t n_pagenum, page_t * n_page, key_t key);
 int delete_entry(pagenum_t key_leaf_pagenum, key_t key);
-int delete(key_t key);
+int delete_key(key_t key);
 
 // Output.
 

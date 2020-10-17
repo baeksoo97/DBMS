@@ -46,7 +46,7 @@ int db_delete(key_t key){
         return -1;
     }
 
-    return delete(key);
+    return delete_key(key);
 }
 
 void db_print_tree(void){
@@ -60,7 +60,7 @@ void db_print_tree(void){
 
 // Second message to the user.
 void usage(void){
-    printf("Enter any of the following commands after the prompt > :\n"
+    printf("Enter any of the following commands after the prompt > \n"
            "\to <data_file> -- Open <data_file> (a string).\n"
            "\tc <data_file> -- Close <data_file> (a string).\n"
            "\ti <k> <value> -- Insert <k> (an integer) <value> (a string).\n"

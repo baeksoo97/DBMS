@@ -11,7 +11,6 @@ int main( int argc, char ** argv ){
     key_t key;
     char value[120];
 
-    usage();
 
     if (argc > 1){
         strcpy(input_file, argv[1]);
@@ -45,6 +44,7 @@ int main( int argc, char ** argv ){
         db_print_tree();
     }
 
+    usage();
     printf("> ");
     while (scanf("%c", &instruction) != EOF){
         switch (instruction){

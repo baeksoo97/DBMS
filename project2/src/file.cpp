@@ -59,7 +59,7 @@ void file_close(const char * pathname) {
 
 // Create a new page
 page_t * make_page(){
-    page_t * page = malloc(sizeof(page_t));
+    page_t * page = (page_t *)malloc(sizeof(page_t));
     if (page == NULL){
         perror("ERROR MAKE_PAGE : Page creation.");
         exit(EXIT_FAILURE);

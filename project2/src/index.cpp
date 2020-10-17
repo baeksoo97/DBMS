@@ -174,7 +174,7 @@ int insert_into_page_after_splitting(pagenum_t old_pagenum, page_t * old_page, i
      * keys and pointers to the old page and
      * the other half to the new.
      */
-    temp_entry = malloc((INTERNAL_ORDER + 1) * sizeof(entry));
+    temp_entry = (entry *)malloc((INTERNAL_ORDER + 1) * sizeof(entry));
     if (temp_entry == NULL){
         perror("ERROR INSERT_INTO_PAGE_AFTER_SPLITTING : cannot create temp_entry");
         exit(EXIT_FAILURE);
@@ -315,7 +315,7 @@ int insert_into_leaf_after_splitting(pagenum_t leaf_pagenum, page_t * leaf, key_
     key_t new_key;
     int insertion_index, split, i, j;
 
-    temp_pointers = malloc((LEAF_ORDER + 1) * sizeof(record));
+    temp_pointers = (record *)malloc((LEAF_ORDER + 1) * sizeof(record));
     if (temp_pointers == NULL){
         perror("ERROR INSERT_INTO_LEAF_AFTER_SPLITTING : cannot create temp_pointers");
         exit(EXIT_FAILURE);
@@ -876,12 +876,12 @@ int delete_entry(pagenum_t n_pagenum, key_t key){
 }
 
 // Master deletion function.
-int delete(key_t key){
+int delete_key(key_t key){
     pagenum_t key_leaf_pagenum;
     char * value;
     int key_found;
 
-    value = malloc(120 * sizeof(char));
+    value = (char *)malloc(120 * sizeof(char));
     key_found = find(key, value);
     key_leaf_pagenum = find_leaf(key);
     free(value);
