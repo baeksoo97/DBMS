@@ -910,31 +910,37 @@ void print_tree(bool verbose){
 
     q.push(header_page->h.root_pagenum);
     while(!q.empty()){
-        pagenum_t pagenum = q.front();
-        q.pop();
+        int temp_size = q.size();
 
-        printf("pagenum %lu ", pagenum);
-        file_read_page(pagenum, page);
+        while(temp_size){
+            pagenum_t pagenum = q.front();
+            q.pop();
 
-        if (page->g.is_leaf){
-            printf("leaf : ");
-            for(i = 0; i < page->g.num_keys; i++){
-                printf("(%ld, %s) ", page->g.record[i].key, page->g.record[i].value);
+            printf("pagenum %lu ", pagenum);
+            file_read_page(pagenum, page);
+
+            if (page->g.is_leaf){
+                printf("leaf : ");
+                for(i = 0; i < page->g.num_keys; i++){
+                    printf("(%ld, %s) ", page->g.record[i].key, page->g.record[i].value);
+                }
+                printf(" | ");
             }
-            printf(" | ");
+            else{
+                printf("internal : ");
+                if (page->g.num_keys > 0){
+                    printf("[%lu] ", page->g.next);
+                    q.push(page->g.next);
+                }
+                for(i = 0; i < page->g.num_keys; i++){
+                    printf("%lu [%lu] ", page->g.entry[i].key, page->g.entry[i].pagenum);
+                    q.push(page->g.entry[i].pagenum);
+                }
+                printf(" | ");
+            }
+            temp_size--;
         }
-        else{
-            printf("internal : ");
-            if (page->g.num_keys > 0){
-                printf("[%lu] ", page->g.next);
-                q.push(page->g.next);
-            }
-            for(i = 0; i < page->g.num_keys; i++){
-                printf("%lu [%lu] ", page->g.entry[i].key, page->g.entry[i].pagenum);
-                q.push(page->g.entry[i].pagenum);
-            }
-            printf(" | ");
-        }
+        printf("\n");
     }
 
     if (verbose){
