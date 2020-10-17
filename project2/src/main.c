@@ -51,7 +51,10 @@ int main( int argc, char ** argv ){
         case 'o':
             scanf("%s", data_file);
             table_id = open_table(data_file);
-            printf("table_id %d\n", table_id);
+            break;
+        case 'c':
+            scanf("%s", data_file);
+            close_table(data_file);
             break;
         case 'd':
             scanf("%lld", &key);
@@ -73,6 +76,7 @@ int main( int argc, char ** argv ){
             break;
         case 'q':
             while (getchar() != (int)'\n');
+            close_table("");
             return EXIT_SUCCESS;
         default:
             usage();
@@ -82,6 +86,7 @@ int main( int argc, char ** argv ){
         printf("> ");
     }
     printf("\n");
+    close_table("");
 
     return EXIT_SUCCESS;
 }

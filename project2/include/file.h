@@ -5,6 +5,7 @@
 #include <stdlib.h> // uint64_t
 #include <unistd.h> // lseek, write, open
 #include <fcntl.h> // open
+#include <string.h>
 
 #define PAGE_SIZE 4096
 #define PAGE_NUM_FOR_RESERVE 1000
@@ -67,10 +68,16 @@ typedef struct page_t {
 
 // GLOBALS
 
-extern int file_id;
+extern int FILE_ID;
 extern page_t * header_page;
 
 // FUNCTION PROTOTYPES
+
+// Try to open file named pathname and init header
+int file_open(const char * pathname);
+
+// close file named pathname
+void file_close(const char * pathname);
 
 // Create a new page
 page_t * make_page();
@@ -83,9 +90,6 @@ void file_init_header(int isExist);
 
 // Read header from file
 page_t * header();
-
-// Try to open file named pathname and init header
-int file_open(const char * pathname);
 
 // Allocate an on-disk page from the free page list
 pagenum_t file_alloc_page();

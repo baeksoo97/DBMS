@@ -1,9 +1,61 @@
 #include "file.h"
 
-int file_id = -1;
+int FILE_ID = -1;
 page_t * header_page = NULL;
 
 // Function Definition
+
+// Utility
+
+// Try to open file named pathname and init header
+int file_open(const char * pathname){
+    int fd;
+
+    if (!access(pathname, F_OK)){
+        // file exists
+        fd = open(pathname, O_RDWR, 0644); // open, read, write
+        if (fd == -1){
+            perror("ERROR FILE_OPEN : cannot open file\n");
+            return -1;
+        }
+        printf("open already existing file : %d\n", fd);
+        FILE_ID = fd;
+        file_init_header(1);
+    }
+    else{
+        // file doesn't exist
+        fd = open(pathname, O_CREAT | O_RDWR, 0644); // create new, read, write
+        if (fd == -1){
+            perror("ERROR FILE_OPEN : cannot create file\n");
+            return -1;
+        }
+        printf("create new file : %d\n", fd);
+        FILE_ID = fd;
+        file_init_header(0);
+    }
+
+    return fd;
+}
+
+// Close data file named pathname
+void file_close(const char * pathname) {
+    if (!strcmp(pathname, "")){
+        // close all opened files
+        if (close(FILE_ID))
+            perror("ERROR FILE_CLOSE");
+        else
+            FILE_ID = -1;
+    }
+    else{
+        // close file named pathname
+        if (close(FILE_ID))
+            perror("ERROR FILE_CLOSE");
+        else{
+            printf("close file %d\n", FILE_ID);
+            FILE_ID = -1;
+        }
+    }
+}
 
 // Create a new page
 page_t * make_page(){
@@ -38,36 +90,6 @@ page_t * header(){
     return header_page;
 }
 
-// Try to open file named pathname and init header
-int file_open(const char * pathname){
-    int fd;
-
-    if (!access(pathname, F_OK)){
-        // file exists
-        fd = open(pathname, O_RDWR, 0644); // open, read, write
-        if (fd == -1){
-            perror("ERROR FILE_OPEN : cannot open file\n");
-            return -1;
-        }
-        printf("open already exist one : %d\n", fd);
-        file_id = fd;
-        file_init_header(1);
-    }
-    else{
-        // file doesn't exist
-        fd = open(pathname, O_CREAT | O_RDWR, 0644); // create new, read, write
-        if (fd == -1){
-            perror("ERROR FILE_OPEN : cannot create file\n");
-            return -1;
-        }
-        printf("create new one : %d\n", fd);
-        file_id = fd;
-        file_init_header(0);
-    }
-
-    return fd;
-}
-
 // Allocate an on-disk page from the free page list
 pagenum_t file_alloc_page(){
     pagenum_t pagenum;
@@ -80,14 +102,16 @@ pagenum_t file_alloc_page(){
         off_t file_size;
         pagenum_t start_free_pagenum, curr_free_pagenum, added_free_pagenum;
 
-        file_size = lseek(file_id, 0, SEEK_END);
+        file_size = lseek(FILE_ID, 0, SEEK_END);
+        if (file_size == -1){
+            perror("ERROR FILE_ALLOC_PAGE");
+        }
 
         // Guarantee the size of file to be the unit of PAGE_SIZE(4096)
         if (file_size % PAGE_SIZE != 0){
             file_size = (file_size / PAGE_SIZE + 1) * PAGE_SIZE;
-            if (ftruncate(file_id, file_size)){
-                perror("ERROR FILE_ALLOC_PAGE : cannot truncate to size\n");
-                exit(EXIT_FAILURE);
+            if (ftruncate(FILE_ID, file_size)){
+                perror("ERROR FILE_ALLOC_PAGE");
             }
         }
 
@@ -133,9 +157,6 @@ void file_free_page(pagenum_t pagenum){
     page->f.next_free_pagenum = header_page->h.free_pagenum;
     header_page->h.free_pagenum = pagenum;
 
-//    printf("file_free_page header->free_page %lld, free_pagenum %lld, free_pagenum->next %lld\n",
-//           header_page->h.free_pagenum, pagenum, page->f.next_free_pagenum);
-
     file_write_page(pagenum, page);
     file_write_page(0, header_page);
 
@@ -144,23 +165,23 @@ void file_free_page(pagenum_t pagenum){
 
 // Read an on-disk page into the in-memory page structure(dest)
 void file_read_page(pagenum_t pagenum, page_t* dest){
-    lseek(file_id, pagenum * PAGE_SIZE, SEEK_SET);
-    ssize_t read_size = read(file_id, dest, PAGE_SIZE);
+    lseek(FILE_ID, pagenum * PAGE_SIZE, SEEK_SET);
+    ssize_t read_size = read(FILE_ID, dest, PAGE_SIZE);
 
-    if (read_size != PAGE_SIZE){
+    if (read_size == -1)
+        perror("ERROR READ_PAGE");
+    else if (read_size != PAGE_SIZE)
         printf("ERROR READ_PAGE : pagenum %lld, read size %zd\n", pagenum, read_size);
-        exit(EXIT_FAILURE);
-    }
 }
 
 // Write an in-memory page(src) to the on-disk page
 void file_write_page(pagenum_t pagenum, const page_t* src){
-    lseek(file_id, pagenum * PAGE_SIZE, SEEK_SET);
-    ssize_t write_size = write(file_id, src, PAGE_SIZE);
-    fsync(file_id);
+    lseek(FILE_ID, pagenum * PAGE_SIZE, SEEK_SET);
+    ssize_t write_size = write(FILE_ID, src, PAGE_SIZE);
+    fsync(FILE_ID);
 
-    if (write_size != PAGE_SIZE){
+    if (write_size == -1)
+        perror("ERROR WRITE_PAGE");
+    else if (write_size != PAGE_SIZE)
         printf("ERROR WRITE_PAGE : pagenum %lld, write size %zd\n", pagenum, write_size);
-        exit(EXIT_FAILURE);
-    }
 }

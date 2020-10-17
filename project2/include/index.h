@@ -11,6 +11,7 @@
 // Utility.
 
 int index_open_table(const char * pathname);
+void index_close_table(const char * pathname);
 
 // Find.
 

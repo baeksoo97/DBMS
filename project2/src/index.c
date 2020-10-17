@@ -11,6 +11,10 @@ int index_open_table(const char * pathname){
     return table_id;
 }
 
+void index_close_table(const char * pathname){
+    file_close(pathname);
+}
+
 // FIND.
 
 /* Traces the path from the root to a leaf, searching by key.
