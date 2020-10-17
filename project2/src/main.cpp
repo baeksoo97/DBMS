@@ -24,18 +24,18 @@ int main( int argc, char ** argv ){
         while (!feof(fp)){
             fscanf(fp, "%c ", &instruction);
             if (instruction == 'i'){
-                fscanf(fp, "%lld %s\n", &key, value);
-                printf("insert %lld %s\n", key, value);
+                fscanf(fp, "%ld %s\n", &key, value);
+                printf("insert %ld %s\n", key, value);
                 db_insert(key, value);
             }
             else if (instruction == 'd'){
-                fscanf(fp, "%lld\n", &key);
-                printf("delete %lld\n", key);
+                fscanf(fp, "%ld\n", &key);
+                printf("delete %ld\n", key);
                 db_delete(key);
             }
             else if (instruction == 'f'){
-                fscanf(fp, "%lld\n", &key);
-                printf("find %lld\n", key);
+                fscanf(fp, "%ld\n", &key);
+                printf("find %ld\n", key);
                 db_find(key, value);
             }
         }
@@ -56,17 +56,17 @@ int main( int argc, char ** argv ){
             close_table(data_file);
             break;
         case 'd':
-            scanf("%lld", &key);
+            scanf("%ld", &key);
             db_delete(key);
             db_print_tree();
             break;
         case 'i':
-            scanf("%lld %s", &key, value);
+            scanf("%ld %s", &key, value);
             db_insert(key, value);
             db_print_tree();
             break;
         case 'f':
-            scanf("%lld", &key);
+            scanf("%ld", &key);
             db_find(key, value);
             db_print_tree();
             break;

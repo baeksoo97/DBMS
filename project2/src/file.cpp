@@ -172,7 +172,7 @@ void file_read_page(pagenum_t pagenum, page_t* dest){
     if (read_size == -1)
         perror("ERROR READ_PAGE");
     else if (read_size != PAGE_SIZE)
-        printf("ERROR READ_PAGE : pagenum %lld, read size %zd\n", pagenum, read_size);
+        printf("ERROR READ_PAGE : pagenum %lu, read size %zd\n", pagenum, read_size);
 }
 
 // Write an in-memory page(src) to the on-disk page
@@ -184,5 +184,5 @@ void file_write_page(pagenum_t pagenum, const page_t* src){
     if (write_size == -1)
         perror("ERROR WRITE_PAGE");
     else if (write_size != PAGE_SIZE)
-        printf("ERROR WRITE_PAGE : pagenum %lld, write size %zd\n", pagenum, write_size);
+        printf("ERROR WRITE_PAGE : pagenum %lu, write size %zd\n", pagenum, write_size);
 }
