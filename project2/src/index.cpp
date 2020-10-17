@@ -896,113 +896,75 @@ int delete_key(key_t key){
 
 // OUTPUT.
 
-pagenum_t queue[QUEUE_SIZE];
-int front = -1;
-int rear = -1;
-int q_size = 0;
-
-int is_empty(void){
-    if (front == rear) return 1;
-    else return 0;
-}
-
-int is_full(void){
-    if ((rear + 1) % QUEUE_SIZE == front) return 1;
-    else return 0;
-}
-
-void enqueue(pagenum_t pagenum){
-    if (!is_full()){
-        rear = (rear + 1) % QUEUE_SIZE;
-        queue[rear] = pagenum;
-        q_size++;
-    }
-}
-
-pagenum_t dequeue(void){
-    if (is_empty()) return 0;
-    else{
-        q_size--;
-        front = (front + 1) % QUEUE_SIZE;
-        return queue[front];
-    }
-}
-
-void print_tree(void){
-    int i = 0;
+queue <pagenum_t> q;
+void print_tree(bool verbose){
+    int i;
     page_t * page = make_page();
     header_page = header();
     if (header_page->h.root_pagenum == 0){
         printf("Tree is empty\n");
         printf("----------\n");
+        free_page(page);
         return;
     }
-    enqueue(header_page->h.root_pagenum);
 
-    while (!is_empty()){
-        int temp_size = q_size;
+    q.push(header_page->h.root_pagenum);
+    while(!q.empty()){
+        pagenum_t pagenum = q.front();
+        q.pop();
 
-        while (temp_size){
-            pagenum_t pagenum = dequeue();
-            printf("pagenum %lld ",pagenum);
-            file_read_page(pagenum, page);
+        printf("pagenum %lld ", pagenum);
+        file_read_page(pagenum, page);
 
-            if (page->g.is_leaf){
-                printf("leaf : ");
-                for (i = 0; i < page->g.num_keys; i++){
-                    printf("(%lld, %s) ", page->g.record[i].key, page->g.record[i].value);
-                }
-                printf(" | ");
+        if (page->g.is_leaf){
+            printf("leaf : ");
+            for(i = 0; i < page->g.num_keys; i++){
+                printf("(%lld, %s) ", page->g.record[i].key, page->g.record[i].value);
             }
-
-            else {
-                printf("internal : ");
-                if (page->g.num_keys > 0){
-                    printf("[%llu] ", page->g.next);
-                    enqueue(page->g.next);
-                }
-                for (i = 0; i < page->g.num_keys; i++){
-                    printf("%lld [%llu] ", page->g.entry[i].key, page->g.entry[i].pagenum);
-                    enqueue(page->g.entry[i].pagenum);
-                }
-                printf(" | ");
-            }
-
-            temp_size--;
+            printf(" | ");
         }
-        printf("\n");
+        else{
+            printf("internal : ");
+            if (page->g.num_keys > 0){
+                printf("[%llu] ", page->g.next);
+                q.push(page->g.next);
+            }
+            for(i = 0; i < page->g.num_keys; i++){
+                printf("%lld [%llu] ", page->g.entry[i].key, page->g.entry[i].pagenum);
+                q.push(page->g.entry[i].pagenum);
+            }
+            printf(" | ");
+        }
     }
 
-//    enqueue(header_page->h.root_pagenum);
+    if (verbose){
+        q.push(header_page->h.root_pagenum);
+        while(!q.empty()){
+            pagenum_t pagenum = q.front();
+            q.pop();
 
-    printf("----------\n");
-
-    while (!is_empty()){
-        int temp_size = q_size;
-
-        while (temp_size){
-            pagenum_t pagenum = dequeue();
-
+            printf("pagenum %lld ", pagenum);
             file_read_page(pagenum, page);
 
             if (page->g.is_leaf){
-//                printf("leaf pagenum : %llu, parent : %llu, is_leaf : %d, num keys : %d, right sibling : %llu",
-//                       pagenum, page->g.parent, page->g.is_leaf, page->g.num_keys, page->g.next);
-//                printf(" | ");
+                printf("leaf pagenum : %llu, parent : %llu, is_leaf : %d, num keys : %d, right sibling : %llu",
+                       pagenum, page->g.parent, page->g.is_leaf, page->g.num_keys, page->g.next);
+                printf(" | ");
             }
             else{
-//                printf("internal pagenum : %llu, parent : %llu, is_leaf : %d, num keys : %d, one more : %llu",
-//                       pagenum, page->g.parent, page->g.is_leaf, page->g.num_keys, page->g.next);
+                printf("internal pagenum : %llu, parent : %llu, is_leaf : %d, num keys : %d, one more : %llu",
+                       pagenum, page->g.parent, page->g.is_leaf, page->g.num_keys, page->g.next);
 
-                enqueue(page->g.next);
-                for (i = 0; i < page->g.num_keys; i++){
-                    enqueue(page->g.entry[i].pagenum);
+                q.push(page->g.next);
+                for(i = 0; i < page->g.num_keys; i++){
+                    q.push(page->g.entry[i].pagenum);
                 }
+
                 printf(" | ");
             }
-
-            temp_size--;
         }
     }
+    printf("\n");
+
     free_page(page);
 }

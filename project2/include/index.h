@@ -3,9 +3,10 @@
 
 #include <stdio.h>
 #include <string.h> // strcpy, memcpy
+#include <queue>
 #include "file.h"
+using namespace std;
 
-#define QUEUE_SIZE 100000000
 // FUNCTION PROTOTYPES.
 
 // Utility.
@@ -59,10 +60,7 @@ int delete_key(key_t key);
 
 // Output.
 
-int is_empty(void);
-int is_full(void);
-pagenum_t dequeue(void);
-void enqueue(pagenum_t pagenum);
-void print_tree(void);
+extern queue <pagenum_t> q;
+void print_tree(bool verbose = false);
 
 #endif //__INDEX_H__

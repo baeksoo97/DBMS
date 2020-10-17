@@ -11,7 +11,6 @@ int main( int argc, char ** argv ){
     key_t key;
     char value[120];
 
-
     if (argc > 1){
         strcpy(input_file, argv[1]);
         fp = fopen(input_file, "r");
