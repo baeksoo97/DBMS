@@ -37,7 +37,7 @@ clean:
 	rm $(TARGET) $(OUT_OBJS) $(LIBS)*
 
 library:
-	gcc -shared -Wl,-soname,libbpt.so -o $(LIBS)libbpt.so $(OBJS_FOR_LIB)
+	g++ -shared -Wl,-soname,libbpt.so -o $(LIBS)libbpt.so $(OUT_OBJS)
 
 static_library:
 	ar cr $(LIBS)libbpt.a $(OUT_OBJS)

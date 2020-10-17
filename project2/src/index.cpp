@@ -21,7 +21,7 @@ void index_close_table(const char * pathname){
  * Returns the pagenum containing the given key.
  */
 pagenum_t find_leaf(key_t key){
-    int i = 0;
+    int i;
     page_t * page;
     pagenum_t pagenum;
 

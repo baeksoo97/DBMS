@@ -3,13 +3,13 @@
 // FUNCTION DEFINITIONS.
 
 // Open existing data file using 'pathname' or create one if not existed
-int open_table(const char * pathname){
+int open_table(char * pathname){
     int table_id = index_open_table(pathname);
 
     return table_id;
 }
 
-void close_table(const char * pathname){
+void close_table(char * pathname){
     if (FILE_ID < 0){
         if (strcmp(pathname, ""))
             printf("File is not opened\n");
@@ -35,8 +35,13 @@ int db_find(key_t key, char * ret_val){
         printf("File is not opened\n");
         return -1;
     }
+    int ret = find(key, ret_val);
+    if (ret == 0)
+        printf("find the record : key = %lld, value %s\n", key, ret_val);
+    else
+        printf("cannot find the record containing key %lld\n", key);
 
-    return find(key, ret_val);
+    return ret;
 }
 
 // Find the matching record and delete it if found

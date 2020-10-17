@@ -76,7 +76,7 @@ int main( int argc, char ** argv ){
             break;
         case 'q':
             while (getchar() != (int)'\n');
-            close_table("");
+            close_table();
             return EXIT_SUCCESS;
         default:
             usage();
@@ -86,7 +86,7 @@ int main( int argc, char ** argv ){
         printf("> ");
     }
     printf("\n");
-    close_table("");
+    close_table();
 
     return EXIT_SUCCESS;
 }

@@ -8,7 +8,7 @@
 #include <string.h>
 
 #define PAGE_SIZE 4096
-#define PAGE_NUM_FOR_RESERVE 100000
+#define PAGE_NUM_FOR_RESERVE 10000
 #define HEADER_PAGE_RESERVED_SIZE 4072
 #define FREE_PAGE_RESERVED_SIZE 4088
 #define PAGE_HEADER_RESERVED_SIZE 104
@@ -18,7 +18,7 @@
 
 // Types.
 
-typedef uint64_t key_t;
+typedef int64_t key_t;
 typedef uint64_t pagenum_t;
 
 typedef struct record {
