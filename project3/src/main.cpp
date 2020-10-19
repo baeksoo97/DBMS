@@ -6,7 +6,7 @@ int main( int argc, char ** argv ){
     char data_file[1000];
     FILE * fp;
     char instruction;
-    int table_id;
+    int table_id = -1;
 
     k_t key;
     char value[120];
@@ -26,21 +26,22 @@ int main( int argc, char ** argv ){
             if (instruction == 'i'){
                 fscanf(fp, "%lld %s\n", &key, value);
                 printf("insert %lld %s\n", key, value);
-                db_insert(key, value);
+                db_insert(table_id, key, value);
             }
             else if (instruction == 'd'){
                 fscanf(fp, "%lld\n", &key);
                 printf("delete %lld\n", key);
-                db_delete(key);
+                db_delete(table_id, key);
             }
             else if (instruction == 'f'){
                 fscanf(fp, "%lld\n", &key);
                 printf("find %lld\n", key);
-                db_find(key, value);
+                db_find(table_id, key, value);
             }
         }
         fclose(fp);
-        db_print_tree();
+        db_print_tree(table_id);
+        close_table(table_id);
     }
 
     usage();
@@ -50,42 +51,44 @@ int main( int argc, char ** argv ){
         case 'o':
             scanf("%s", data_file);
             table_id = open_table(data_file);
+            printf("table_id %d\n", table_id);
             break;
         case 'c':
-            scanf("%s", data_file);
-            close_table(data_file);
+            scanf("%d", &table_id);
+            close_table(table_id);
             break;
         case 'd':
-            scanf("%lld", &key);
-            db_delete(key);
-            db_print_tree();
+            scanf("%d %lld", &table_id, &key);
+            db_delete(table_id, key);
+            db_print_tree(table_id);
             break;
         case 'i':
-            scanf("%lld %s", &key, value);
-            db_insert(key, value);
-            db_print_tree();
+            scanf("%d %lld %s", &table_id, &key, value);
+            db_insert(table_id, key, value);
+            db_print_tree(table_id);
             break;
         case 'f':
-            scanf("%lld", &key);
-            db_find(key, value);
-            db_print_tree();
+            scanf("%d %lld", &table_id, &key);
+            db_find(table_id, key, value);
+            db_print_tree(table_id);
             break;
         case 'p':
-            db_print_tree();
+            scanf("%d", &table_id);
+            db_print_tree(table_id);
             break;
         case 'q':
             while (getchar() != (int)'\n');
-            close_table();
+            shutdown_db();
             return EXIT_SUCCESS;
         default:
             usage();
             break;
         }
         while (getchar() != (int)'\n');
-        printf("> ");
+        printf(" > ");
     }
     printf("\n");
-    close_table();
+    shutdown_db();
 
     return EXIT_SUCCESS;
 }

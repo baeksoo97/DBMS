@@ -9,33 +9,29 @@ int open_table(char * pathname){
     return table_id;
 }
 
-void close_table(char * pathname){
-    if (FILE_ID < 0){
-        if (strcmp(pathname, ""))
-            printf("File is not opened\n");
-        return;
-    }
-
-    index_close_table(pathname);
+// Initialize buffer pool with given number and buffer manager
+int init_db(int buf_num){
+    return index_init_db(buf_num);
 }
 
 // Insert input 'key/value' (record) to data file at the right place
-int db_insert(k_t key, char * value){
-    if (FILE_ID < 0){
-        printf("File is not opened\n");
+int db_insert(int table_id, k_t key, char * value){
+    if (!is_table_opened(table_id)) {
+        printf("ERROR DB_INSERT : table is not opened\n");
         return -1;
     }
 
-    return insert(key, value);
+    return insert(table_id, key, value);
 }
 
 // Find the record containing input 'key'
-int db_find(k_t key, char * ret_val){
-    if (FILE_ID < 0){
-        printf("File is not opened\n");
+int db_find(int table_id, k_t key, char * ret_val){
+    if (!is_table_opened(table_id)) {
+        printf("ERROR DB_FIND : table is not opened\n");
         return -1;
     }
-    int ret = find(key, ret_val);
+
+    int ret = find(table_id, key, ret_val);
     if (ret == 0)
         printf("find the record : key = %lld, value %s\n", key, ret_val);
     else
@@ -45,22 +41,38 @@ int db_find(k_t key, char * ret_val){
 }
 
 // Find the matching record and delete it if found
-int db_delete(k_t key){
-    if (FILE_ID < 0){
-        printf("File is not opened\n");
+int db_delete(int table_id, k_t key){
+    if (!is_table_opened(table_id)) {
+        printf("ERROR DB_DELETE : table is not opened\n");
         return -1;
     }
 
-    return delete_key(key);
+    return delete_key(table_id, key);
 }
 
-void db_print_tree(void){
-    if (FILE_ID < 0){
-        printf("File is not opened\n");
+// Write the pages relating to this table to disk and close the table
+int close_table(int table_id){
+    if (!is_table_opened(table_id)) {
+        printf("ERROR DB_CLOSE : table is not opened\n");
+        return -1;
+    }
+
+    return index_close_table(table_id);
+}
+
+// Flush all data from buffer and destroy allocated buffer
+int shutdown_db(void){
+    return index_close_table();
+}
+
+// Print data file based on B+tree
+void db_print_tree(int table_id){
+    if (!is_table_opened(table_id)) {
+        printf("ERROR DB_PRINT : table is not opened\n");
         return;
     }
 
-    print_tree();
+    print_tree(table_id);
 }
 
 // Second message to the user.

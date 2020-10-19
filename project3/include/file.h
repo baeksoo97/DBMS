@@ -8,6 +8,7 @@
 #include <string.h>
 #include <string>
 #include <map>
+#include <vector>
 using namespace std;
 
 #define PAGE_SIZE 4096
@@ -71,17 +72,22 @@ typedef struct page_t {
 
 // GLOBALS
 
-extern int FILE_ID;
-extern map<string, int> file_list;
+extern map <string, int> file_table_map;
+extern vector<pair<bool, int> > table_fd_map; // table_id : 1 ~ 10
 extern page_t * header_page;
 
 // FUNCTION PROTOTYPES
 
 // Try to open file named pathname and init header
-int file_open(const char * pathname);
+bool is_table_opened(int table_id);
+int get_file_id(int table_id);
+int get_table_id(void);
+int file_set_table(const char * pathname, int fd);
+int file_open_table(const char * pathname);
 
-// close file named pathname
-void file_close(const char * pathname);
+// Write the pages relating to this table to disk and close the table
+int close_file(int table_id);
+int file_close_table(int table_id);
 
 // Create a new page
 page_t * make_page();
@@ -90,21 +96,21 @@ page_t * make_page();
 void free_page(page_t * page);
 
 // Initialize header in file
-void file_init_header(int isExist);
+void file_init_header(int table_id);
 
 // Read header from file
-page_t * header();
+page_t * header(int table_id);
 
 // Allocate an on-disk page from the free page list
-pagenum_t file_alloc_page();
+pagenum_t file_alloc_page(int table_id);
 
 // Free an on-disk page to the free page list
-void file_free_page(pagenum_t pagenum);
+void file_free_page(int table_id, pagenum_t pagenum);
 
 // Read an on-disk page into the in-memory page structure(dest)
-void file_read_page(pagenum_t pagenum, page_t * dest);
+void file_read_page(int table_id, pagenum_t pagenum, page_t * dest);
 
 // Write an in-memory page(src) to the on-disk page
-void file_write_page(pagenum_t pagenum, const page_t * src);
+void file_write_page(int table_id, pagenum_t pagenum, const page_t * src);
 
 #endif //__FILE_H__

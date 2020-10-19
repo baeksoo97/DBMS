@@ -12,19 +12,26 @@
 // Open existing data file using 'pathname' or create one if not existed
 int open_table(char * pathname);
 
-// Close existing data file using 'pathname'
-void close_table(char * pathname = (char *)"");
+// Initialize buffer pool with given number and buffer manager
+int init_db(int buf_num);
 
 // Insert input 'key/value' (record) to data file at the right place
-int db_insert(k_t key, char * value);
+int db_insert(int table_id, int64_t key, char * value);
 
 // Find the record containing input 'key'
-int db_find(k_t key, char * ret_val);
+int db_find(int table_id, int64_t key, char * ret_val);
 
 // Find the matching record and delete it if found
-int db_delete(k_t key);
+int db_delete(int table_id, int64_t key);
 
-void db_print_tree(void);
+// Write the pages relating to this table to disk and close the table
+int close_table(int table_id);
+
+// Flush all data from buffer and destroy allocated buffer
+int shutdown_db(void);
+
+// Print data file based on B+tree
+void db_print_tree(int table_id);
 
 // Second message to the user.
 void usage(void);

@@ -5,14 +5,15 @@
 // UTILITY.
 
 int index_open_table(const char * pathname){
-    int table_id;
-    table_id = file_open(pathname);
-
-    return table_id;
+    return buffer_open_table(pathname);
 }
 
-void index_close_table(const char * pathname){
-    file_close(pathname);
+int index_init_db(int buf_num){
+    return buffer_init_db(buf_num);
+}
+
+int index_close_table(int table_id){
+    return buffer_close_table(table_id);
 }
 
 // FIND.
@@ -20,19 +21,19 @@ void index_close_table(const char * pathname){
 /* Traces the path from the root to a leaf, searching by key.
  * Returns the pagenum containing the given key.
  */
-pagenum_t find_leaf(k_t key){
+pagenum_t find_leaf(int table_id, k_t key){
     int i;
     page_t * page;
     pagenum_t pagenum;
 
-    header_page = header();
+    header_page = header(table_id);
     if (header_page->h.root_pagenum == 0){
         return 0;
     }
 
     page = make_page();
     pagenum = header_page->h.root_pagenum;
-    file_read_page(pagenum, page);
+    file_read_page(table_id, pagenum, page);
     while(!page->g.is_leaf){
         i = 0;
         while (i < page->g.num_keys){
@@ -45,7 +46,7 @@ pagenum_t find_leaf(k_t key){
         else
             pagenum = page->g.entry[i - 1].pagenum;
 
-        file_read_page(pagenum, page);
+        file_read_page(table_id, pagenum, page);
     }
 
     free_page(page);
@@ -53,16 +54,16 @@ pagenum_t find_leaf(k_t key){
 }
 
 // Master find function.
-int find(k_t key, char * ret_val){
+int find(int table_id, k_t key, char * ret_val){
     int i;
     page_t * leaf;
-    pagenum_t leaf_pagenum = find_leaf(key);
+    pagenum_t leaf_pagenum = find_leaf(table_id, key);
     if (leaf_pagenum == 0){
         return -1;
     }
 
     leaf = make_page();
-    file_read_page(leaf_pagenum, leaf);
+    file_read_page(table_id, leaf_pagenum, leaf);
     for (i = 0; i < leaf->g.num_keys; i++){
         if (leaf->g.record[i].key == key) break;
     }
@@ -157,8 +158,8 @@ int get_left_index(page_t * parent, pagenum_t left_pagenum){
  * into a page, causing the page's size to exceed
  * the order, and causing the page to split into two.
  */
-int insert_into_page_after_splitting(pagenum_t old_pagenum, page_t * old_page, int left_index,
-                                        k_t key, pagenum_t right_pagenum){
+int insert_into_page_after_splitting(int table_id, pagenum_t old_pagenum, page_t * old_page, int left_index,
+                                     k_t key, pagenum_t right_pagenum){
 //    printf("insert_into_node_after_Splitting\n");
     int i, j, split;
     k_t k_prime;
@@ -195,7 +196,7 @@ int insert_into_page_after_splitting(pagenum_t old_pagenum, page_t * old_page, i
     split = cut(INTERNAL_ORDER - 1);
 
     new_page = make_internal_page();
-    new_pagenum = file_alloc_page();
+    new_pagenum = file_alloc_page(table_id);
     old_page->g.num_keys = 0;
     for (i = 0; i < split; i++){
         memcpy(old_page->g.entry + i, temp_entry + i, sizeof(struct entry));
@@ -216,32 +217,32 @@ int insert_into_page_after_splitting(pagenum_t old_pagenum, page_t * old_page, i
 
     child = make_page();
     child_pagenum = new_page->g.next;
-    file_read_page(child_pagenum, child);
+    file_read_page(table_id, child_pagenum, child);
     child->g.parent = new_pagenum;
-    file_write_page(child_pagenum, child);
+    file_write_page(table_id, child_pagenum, child);
     for (i = 0; i < new_page->g.num_keys; i++){
         child_pagenum = new_page->g.entry[i].pagenum;
-        file_read_page(child_pagenum, child);
+        file_read_page(table_id, child_pagenum, child);
         child->g.parent = new_pagenum;
-        file_write_page(child_pagenum, child);
+        file_write_page(table_id, child_pagenum, child);
     }
     free_page(child);
 
-    file_write_page(old_pagenum, old_page);
-    file_write_page(new_pagenum, new_page);
+    file_write_page(table_id, old_pagenum, old_page);
+    file_write_page(table_id, new_pagenum, new_page);
 
     /* Insert a new key into the parent of the two
      * pages resulting from the split, with
      * the old page to the left and the new to the right.
      */
-    return insert_into_parent(old_pagenum, old_page, k_prime, new_pagenum, new_page);
+    return insert_into_parent(table_id, old_pagenum, old_page, k_prime, new_pagenum, new_page);
 }
 
 /* Inserts a new key and pointer to a node
  * into a node into which these can fit
  * without violating the B+ tree properties.
  */
-int insert_into_page(pagenum_t n_pagenum, page_t * n_page,
+int insert_into_page(int table_id, pagenum_t n_pagenum, page_t * n_page,
                      int left_index, k_t key, pagenum_t right_pagenum){
     int i;
 //    printf("insert_into_node\n");
@@ -263,7 +264,7 @@ int insert_into_page(pagenum_t n_pagenum, page_t * n_page,
 
     n_page->g.num_keys++;
 
-    file_write_page(n_pagenum, n_page);
+    file_write_page(table_id, n_pagenum, n_page);
 
     free_page(n_page);
 
@@ -273,21 +274,21 @@ int insert_into_page(pagenum_t n_pagenum, page_t * n_page,
 /* Inserts a new page (leaf or internal node) into the B+ tree.
  * Returns the root of the tree after insertion.
  */
-int insert_into_parent(pagenum_t left_pagenum, page_t * left, k_t key, pagenum_t right_pagenum, page_t * right){
-//    printf("insert_into_parent\n");
+int insert_into_parent(int table_id, pagenum_t left_pagenum, page_t * left, k_t key,
+                       pagenum_t right_pagenum, page_t * right){
     int left_index;
     page_t * parent;
     pagenum_t parent_pagenum = left->g.parent;
 
     // Case 1 : new root.
     if (parent_pagenum == 0)
-        return insert_into_new_root(left_pagenum, left, key, right_pagenum, right);
+        return insert_into_new_root(table_id, left_pagenum, left, key, right_pagenum, right);
 
     // Case 2 : leaf or page. (Remainder of function body.)
 
     // Find the parent's pointer to the left page.
     parent = make_page();
-    file_read_page(parent_pagenum, parent);
+    file_read_page(table_id, parent_pagenum, parent);
 
     left_index = get_left_index(parent, left_pagenum);
 
@@ -296,10 +297,10 @@ int insert_into_parent(pagenum_t left_pagenum, page_t * left, k_t key, pagenum_t
 
     // Simple Case 2-1 : the new key fits into the page.
     if (parent->g.num_keys < INTERNAL_ORDER){
-        return insert_into_page(parent_pagenum, parent, left_index, key, right_pagenum);
+        return insert_into_page(table_id, parent_pagenum, parent, left_index, key, right_pagenum);
     }
     // Harder Case 2-2 : split a page in order to preserve the B+tree properties.
-    return insert_into_page_after_splitting(parent_pagenum, parent, left_index, key, right_pagenum);
+    return insert_into_page_after_splitting(table_id, parent_pagenum, parent, left_index, key, right_pagenum);
 }
 
 /* Inserts a new key and pointer
@@ -307,8 +308,7 @@ int insert_into_parent(pagenum_t left_pagenum, page_t * left, k_t key, pagenum_t
  * the tree's order, causing the leaf to be split
  * in half.
  */
-int insert_into_leaf_after_splitting(pagenum_t leaf_pagenum, page_t * leaf, k_t key, struct record * pointer){
-//    printf("insert_into_leaf_after_splitting\n");
+int insert_into_leaf_after_splitting(int table_id, pagenum_t leaf_pagenum, page_t * leaf, k_t key, struct record * pointer){
     struct record * temp_pointers;
     page_t * new_leaf;
     pagenum_t new_leaf_pagenum;
@@ -322,7 +322,7 @@ int insert_into_leaf_after_splitting(pagenum_t leaf_pagenum, page_t * leaf, k_t 
     }
 
     new_leaf = make_leaf_page();
-    new_leaf_pagenum = file_alloc_page();
+    new_leaf_pagenum = file_alloc_page(table_id);
 
     // Find the index of leaf records that key should be inserted
     insertion_index = 0;
@@ -361,17 +361,17 @@ int insert_into_leaf_after_splitting(pagenum_t leaf_pagenum, page_t * leaf, k_t 
     new_leaf->g.parent = leaf->g.parent;
     new_key = new_leaf->g.record[0].key;
 
-    file_write_page(leaf_pagenum, leaf);
-    file_write_page(new_leaf_pagenum, new_leaf);
+    file_write_page(table_id, leaf_pagenum, leaf);
+    file_write_page(table_id, new_leaf_pagenum, new_leaf);
 
-    return insert_into_parent(leaf_pagenum, leaf, new_key, new_leaf_pagenum, new_leaf);
+    return insert_into_parent(table_id, leaf_pagenum, leaf, new_key, new_leaf_pagenum, new_leaf);
 }
 
 /* Inserts a new pointer to a record and its corresponding
  * key into a leaf.
  * Returns the altered leaf.
  */
-int insert_into_leaf(pagenum_t leaf_pagenum, page_t * leaf, k_t key, record * pointer){
+int insert_into_leaf(int table_id, pagenum_t leaf_pagenum, page_t * leaf, k_t key, record * pointer){
 //    printf("insert_into_leaf\n");
     int i, insertion_point;
 
@@ -385,7 +385,7 @@ int insert_into_leaf(pagenum_t leaf_pagenum, page_t * leaf, k_t key, record * po
     memcpy(leaf->g.record + insertion_point, pointer, sizeof(record));
     leaf->g.num_keys++;
 
-    file_write_page(leaf_pagenum, leaf);
+    file_write_page(table_id, leaf_pagenum, leaf);
 
     free_page(leaf);
     free(pointer);
@@ -397,10 +397,10 @@ int insert_into_leaf(pagenum_t leaf_pagenum, page_t * leaf, k_t key, record * po
  * and inserts the appropriate key into
  * the new root.
  */
-int insert_into_new_root(pagenum_t left_pagenum, page_t * left, k_t key, pagenum_t right_pagenum, page_t * right){
+int insert_into_new_root(int table_id, pagenum_t left_pagenum, page_t * left, k_t key, pagenum_t right_pagenum, page_t * right){
 //    printf("insert_into_new_root\n");
     page_t * root = make_internal_page();
-    pagenum_t root_pagenum = file_alloc_page();
+    pagenum_t root_pagenum = file_alloc_page(table_id);
 
     root->g.parent = 0;
     root->g.is_leaf = 0;
@@ -412,13 +412,13 @@ int insert_into_new_root(pagenum_t left_pagenum, page_t * left, k_t key, pagenum
     left->g.parent = root_pagenum;
     right->g.parent = root_pagenum;
 
-    header_page = header();
+    header_page = header(table_id);
     header_page->h.root_pagenum = root_pagenum;
 
-    file_write_page(root_pagenum, root);
-    file_write_page(left_pagenum, left);
-    file_write_page(right_pagenum, right);
-    file_write_page(0, header_page);
+    file_write_page(table_id, root_pagenum, root);
+    file_write_page(table_id, left_pagenum, left);
+    file_write_page(table_id, right_pagenum, right);
+    file_write_page(table_id, 0, header_page);
 
     free_page(root);
     free_page(left);
@@ -428,9 +428,9 @@ int insert_into_new_root(pagenum_t left_pagenum, page_t * left, k_t key, pagenum
 }
 
 // First insertion: start a new tree.
-int insert_new_tree(k_t key, record * pointer){
+int insert_new_tree(int table_id, k_t key, record * pointer){
     page_t * root = make_leaf_page();
-    pagenum_t root_pagenum = file_alloc_page();
+    pagenum_t root_pagenum = file_alloc_page(table_id);
 
     root->g.parent = 0;
     root->g.num_keys++;
@@ -439,8 +439,8 @@ int insert_new_tree(k_t key, record * pointer){
 
     header_page->h.root_pagenum = root_pagenum;
 
-    file_write_page(root_pagenum, root);
-    file_write_page(0, header_page);
+    file_write_page(table_id, root_pagenum, root);
+    file_write_page(table_id, 0, header_page);
 
     free_page(root);
     free(pointer);
@@ -448,42 +448,42 @@ int insert_new_tree(k_t key, record * pointer){
 }
 
 // Master insertion function.
-int insert(k_t key, char * value){
+int insert(int table_id, k_t key, char * value){
     record * pointer;
     pagenum_t leaf_pagenum;
     page_t * leaf;
 
     // The current implementation ignores duplicates.
-    if (find(key, value) == 0){
+    if (find(table_id, key, value) == 0){
         return -1;
     }
 
     // Create a new record for the value.
     pointer = make_record(key, value);
 
-    header_page = header();
+    header_page = header(table_id);
 
     // Case: the tree does not exist yet. Start a new tree.
     if (header_page->h.root_pagenum == 0){
-        return insert_new_tree(key, pointer);
+        return insert_new_tree(table_id, key, pointer);
     }
 
     // Case: the tree already exists. (Rest of function body.)
-    leaf_pagenum = find_leaf(key);
+    leaf_pagenum = find_leaf(table_id, key);
     if (leaf_pagenum == 0) {
         return -1;
     }
 
     leaf = make_page();
-    file_read_page(leaf_pagenum, leaf);
+    file_read_page(table_id, leaf_pagenum, leaf);
 
     // Case: leaf has room for key and pointer.
     if (leaf->g.num_keys < LEAF_ORDER){
-        return insert_into_leaf(leaf_pagenum, leaf, key, pointer);
+        return insert_into_leaf(table_id, leaf_pagenum, leaf, key, pointer);
     }
 
     // Case: leaf must be split.
-    return insert_into_leaf_after_splitting(leaf_pagenum, leaf, key, pointer);
+    return insert_into_leaf_after_splitting(table_id, leaf_pagenum, leaf, key, pointer);
 }
 
 
@@ -493,11 +493,10 @@ int insert(k_t key, char * value){
  * too small after deletion, but its neighbor is too big to append
  * the small node's entries without exceeding the maximum.
  */
-int redistribute_nodes(pagenum_t parent_pagenum, page_t * parent,
+int redistribute_nodes(int table_id, pagenum_t parent_pagenum, page_t * parent,
                        pagenum_t n_pagenum, page_t * n_page,
                        pagenum_t neighbor_pagenum, page_t * neighbor,
                        int neighbor_index, int k_prime_index, k_t k_prime){
-//    printf("redistribute\n");
     int i, j, split, neighbor_end;
     pagenum_t tmp_pagenum;
 
@@ -526,27 +525,16 @@ int redistribute_nodes(pagenum_t parent_pagenum, page_t * parent,
 
             page_t * tmp = make_page();
             tmp_pagenum = n_page->g.next;
-            file_read_page(tmp_pagenum, tmp);
+            file_read_page(table_id, tmp_pagenum, tmp);
             tmp->g.parent = n_pagenum;
-            file_write_page(tmp_pagenum, tmp);
+            file_write_page(table_id, tmp_pagenum, tmp);
             for (i = 0; i < n_page->g.num_keys; i++){
                 tmp_pagenum = n_page->g.entry[i].pagenum;
-                file_read_page(tmp_pagenum, tmp);
+                file_read_page(table_id, tmp_pagenum, tmp);
                 tmp->g.parent = n_pagenum;
-                file_write_page(tmp_pagenum, tmp);
+                file_write_page(table_id, tmp_pagenum, tmp);
             }
             free_page(tmp);
-        }
-        else{
-            neighbor_end = neighbor->g.num_keys;
-
-            for (i = split, j = 0; i < neighbor_end; i++, j++){
-                memcpy(n_page->g.record + j, neighbor->g.record + i, sizeof(struct record));
-                n_page->g.num_keys++;
-                neighbor->g.num_keys--;
-            }
-
-            parent->g.entry[k_prime_index].key = n_page->g.record[0].key;
         }
     }
     /* Case: n is the leftmost child.
@@ -579,25 +567,11 @@ int redistribute_nodes(pagenum_t parent_pagenum, page_t * parent,
             page_t * tmp = make_page();
             for (i = 0; i < n_page->g.num_keys; i++){
                 tmp_pagenum = n_page->g.entry[i].pagenum;
-                file_read_page(tmp_pagenum, tmp);
+                file_read_page(table_id, tmp_pagenum, tmp);
                 tmp->g.parent = n_pagenum;
-                file_write_page(tmp_pagenum, tmp);
+                file_write_page(table_id, tmp_pagenum, tmp);
             }
             free_page(tmp);
-        }
-        else {
-            neighbor_end = neighbor->g.num_keys;
-
-            for (i = 0, j = 0; i < split; i++, j++){
-                memcpy(n_page->g.record + j, neighbor->g.record + i, sizeof(struct record));
-                n_page->g.num_keys++;
-                neighbor->g.num_keys--;
-            }
-            for (i = split, j = 0; i < neighbor_end; i++, j++){
-                memcpy(neighbor->g.record + j, neighbor->g.record + i, sizeof(struct record));
-            }
-
-            parent->g.entry[k_prime_index].key = neighbor->g.record[0].key;
         }
     }
 
@@ -605,9 +579,9 @@ int redistribute_nodes(pagenum_t parent_pagenum, page_t * parent,
      * the neighbor has one fewer of each.
      */
 
-    file_write_page(n_pagenum, n_page);
-    file_write_page(neighbor_pagenum, neighbor);
-    file_write_page(parent_pagenum, parent);
+    file_write_page(table_id, n_pagenum, n_page);
+    file_write_page(table_id, neighbor_pagenum, neighbor);
+    file_write_page(table_id, parent_pagenum, parent);
 
     free_page(n_page);
     free_page(neighbor);
@@ -619,10 +593,9 @@ int redistribute_nodes(pagenum_t parent_pagenum, page_t * parent,
 /* Coalesces a node that has become too small after deletion with a neighboring node that
  * can accept the additional entries without exceeding the maximum.
  */
-int coalesce_nodes(pagenum_t parent_pagenum, page_t * parent, pagenum_t n_pagenum, page_t * n_page,
-                      pagenum_t neighbor_pagenum, page_t * neighbor, int neighbor_index,
-                      k_t k_prime){
-//    printf("coalesce\n");
+int coalesce_nodes(int table_id, pagenum_t parent_pagenum, page_t * parent, pagenum_t n_pagenum, page_t * n_page,
+                   pagenum_t neighbor_pagenum, page_t * neighbor, int neighbor_index,
+                   k_t k_prime){
     int i, j, neighbor_insertion_index, n_end;
     page_t * tmp;
     pagenum_t tmp_pagenum;
@@ -665,14 +638,14 @@ int coalesce_nodes(pagenum_t parent_pagenum, page_t * parent, pagenum_t n_pagenu
         // All children must now point up to the same parent.
         tmp = make_page();
         tmp_pagenum = neighbor->g.next;
-        file_read_page(tmp_pagenum, tmp);
+        file_read_page(table_id, tmp_pagenum, tmp);
         tmp->g.parent = neighbor_pagenum;
-        file_write_page(tmp_pagenum, tmp);
+        file_write_page(table_id, tmp_pagenum, tmp);
         for (i = 0; i < neighbor->g.num_keys; i++){
             tmp_pagenum = neighbor->g.entry[i].pagenum;
-            file_read_page(tmp_pagenum, tmp);
+            file_read_page(table_id, tmp_pagenum, tmp);
             tmp->g.parent = neighbor_pagenum;
-            file_write_page(tmp_pagenum, tmp);
+            file_write_page(table_id, tmp_pagenum, tmp);
         }
         free_page(tmp);
     }
@@ -689,11 +662,11 @@ int coalesce_nodes(pagenum_t parent_pagenum, page_t * parent, pagenum_t n_pagenu
         neighbor->g.next = n_page->g.next;
     }
 
-    file_write_page(neighbor_pagenum, neighbor);
+    file_write_page(table_id, neighbor_pagenum, neighbor);
 
-    delete_entry(parent_pagenum, k_prime);
+    delete_entry(table_id, parent_pagenum, k_prime);
 
-    file_free_page(n_pagenum);
+    file_free_page(table_id, n_pagenum);
 
     free_page(parent);
     free_page(n_page);
@@ -729,13 +702,13 @@ int get_neighbor_index(pagenum_t n_pagenum, page_t * n_page, pagenum_t parent_pa
     exit(EXIT_FAILURE);
 }
 
-int adjust_root(pagenum_t root_pagenum){
+int adjust_root(int table_id, pagenum_t root_pagenum){
     page_t * root;
     page_t * new_root;
     pagenum_t new_root_pagenum;
 
     root = make_page();
-    file_read_page(root_pagenum, root);
+    file_read_page(table_id, root_pagenum, root);
 
     /* Case: nonempty root.
      * Key and pointer have already been deleted,
@@ -750,29 +723,29 @@ int adjust_root(pagenum_t root_pagenum){
     // If it has a child, promote the first (only) child as the new root.
     if (!root->g.is_leaf){
         new_root_pagenum = root->g.next;
-        file_read_page(new_root_pagenum, new_root);
+        file_read_page(table_id, new_root_pagenum, new_root);
         new_root->g.parent = 0;
-        file_write_page(new_root_pagenum, new_root);
+        file_write_page(table_id, new_root_pagenum, new_root);
 
-        header_page = header();
+        header_page = header(table_id);
         header_page->h.root_pagenum = new_root_pagenum;
-        file_write_page(0, header_page);
+        file_write_page(table_id, 0, header_page);
     }
     // If it is a leaf (has no children), then the whole tree is empty.
     else{
-        header_page = header();
+        header_page = header(table_id);
         header_page->h.root_pagenum = 0;
-        file_write_page(0, header_page);
+        file_write_page(table_id, 0, header_page);
     }
 
-    file_free_page(root_pagenum);
+    file_free_page(table_id, root_pagenum);
     free_page(root);
     free_page(new_root);
 
     return 0;
 }
 
-pagenum_t remove_entry_from_page(pagenum_t n_pagenum, page_t * n_page, k_t key){
+pagenum_t remove_entry_from_page(int table_id, pagenum_t n_pagenum, page_t * n_page, k_t key){
     int i;
 
     i = 0;
@@ -794,7 +767,7 @@ pagenum_t remove_entry_from_page(pagenum_t n_pagenum, page_t * n_page, k_t key){
     // One key fewer.
     n_page->g.num_keys--;
 
-    file_write_page(n_pagenum, n_page);
+    file_write_page(table_id, n_pagenum, n_page);
 
     return n_pagenum;
 }
@@ -804,7 +777,7 @@ pagenum_t remove_entry_from_page(pagenum_t n_pagenum, page_t * n_page, k_t key){
  * from the leaf, and then makes all appropriate
  * changes to preserve the B+ tree properties.
  */
-int delete_entry(pagenum_t n_pagenum, k_t key){
+int delete_entry(int table_id, pagenum_t n_pagenum, k_t key){
     int min_keys, neighbor_index, k_prime_index, capacity;
     k_t k_prime;
     page_t * n_page;
@@ -813,17 +786,17 @@ int delete_entry(pagenum_t n_pagenum, k_t key){
     pagenum_t parent_pagenum, neighbor_pagenum;
 
     n_page = make_page();
-    file_read_page(n_pagenum, n_page);
+    file_read_page(table_id, n_pagenum, n_page);
 
     // Remove key and pointer from node.
-    n_pagenum = remove_entry_from_page(n_pagenum, n_page, key);
+    n_pagenum = remove_entry_from_page(table_id, n_pagenum, n_page, key);
 
     /* Case:  deletion from the root.
      */
-    header_page = header();
+    header_page = header(table_id);
     if (header_page->h.root_pagenum == n_pagenum){
         free_page(n_page);
-        return adjust_root(n_pagenum);
+        return adjust_root(table_id, n_pagenum);
     }
 
     /* Case:  deletion from a node below the root.
@@ -846,7 +819,7 @@ int delete_entry(pagenum_t n_pagenum, k_t key){
      */
     parent = make_page();
     parent_pagenum = n_page->g.parent;
-    file_read_page(parent_pagenum, parent);
+    file_read_page(table_id, parent_pagenum, parent);
 
     neighbor_index = get_neighbor_index(n_pagenum, n_page, parent_pagenum, parent);
     k_prime_index = neighbor_index == -2 ? 0 : neighbor_index + 1;
@@ -861,33 +834,33 @@ int delete_entry(pagenum_t n_pagenum, k_t key){
     capacity = n_page->g.is_leaf == 1 ? LEAF_ORDER : INTERNAL_ORDER;
 
     neighbor = make_page();
-    file_read_page(neighbor_pagenum, neighbor);
+    file_read_page(table_id, neighbor_pagenum, neighbor);
 
     /* Coalescence. */
     if ((!n_page->g.is_leaf && neighbor->g.num_keys + n_page->g.num_keys < capacity)
         || n_page->g.is_leaf)
-        return coalesce_nodes(parent_pagenum, parent, n_pagenum, n_page, neighbor_pagenum,
+        return coalesce_nodes(table_id, parent_pagenum, parent, n_pagenum, n_page, neighbor_pagenum,
                               neighbor, neighbor_index, k_prime);
 
     /* Redistribution. */
     else
-        return redistribute_nodes(parent_pagenum, parent, n_pagenum, n_page, neighbor_pagenum,
+        return redistribute_nodes(table_id, parent_pagenum, parent, n_pagenum, n_page, neighbor_pagenum,
                                   neighbor, neighbor_index, k_prime_index, k_prime);
 }
 
 // Master deletion function.
-int delete_key(k_t key){
+int delete_key(int table_id, k_t key){
     pagenum_t key_leaf_pagenum;
     char * value;
     int key_found;
 
     value = (char *)malloc(120 * sizeof(char));
-    key_found = find(key, value);
-    key_leaf_pagenum = find_leaf(key);
+    key_found = find(table_id, key, value);
+    key_leaf_pagenum = find_leaf(table_id, key);
     free(value);
 
     if (key_found != -1 && key_leaf_pagenum != 0){
-        return delete_entry(key_leaf_pagenum, key);
+        return delete_entry(table_id, key_leaf_pagenum, key);
     }
     else{
         return -1;
@@ -897,10 +870,10 @@ int delete_key(k_t key){
 // OUTPUT.
 
 queue <pagenum_t> q;
-void print_tree(bool verbose){
+void print_tree(int table_id, bool verbose){
     int i;
     page_t * page = make_page();
-    header_page = header();
+    header_page = header(table_id);
     if (header_page->h.root_pagenum == 0){
         printf("Tree is empty\n");
         printf("----------\n");
@@ -917,7 +890,7 @@ void print_tree(bool verbose){
             q.pop();
 
             printf("pagenum %llu ", pagenum);
-            file_read_page(pagenum, page);
+            file_read_page(table_id, pagenum, page);
 
             if (page->g.is_leaf){
                 printf("leaf : ");
@@ -950,7 +923,7 @@ void print_tree(bool verbose){
             q.pop();
 
             printf("pagenum %llu ", pagenum);
-            file_read_page(pagenum, page);
+            file_read_page(table_id, pagenum, page);
 
             if (page->g.is_leaf){
                 printf("leaf pagenum : %llu, parent : %llu, is_leaf : %d, num keys : %d, right sibling : %llu",
