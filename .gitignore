@@ -1,6 +1,7 @@
 /bpt
 .idea/
 /project2/.idea/
-/project2/cmake-build-debug
-/project2/CMakeLists.txt
+CMakeLists.txt
 *.py
+*/cmake-build-debug
+
