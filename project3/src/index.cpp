@@ -916,24 +916,24 @@ void print_tree(bool verbose){
             pagenum_t pagenum = q.front();
             q.pop();
 
-            printf("pagenum %lu ", pagenum);
+            printf("pagenum %llu ", pagenum);
             file_read_page(pagenum, page);
 
             if (page->g.is_leaf){
                 printf("leaf : ");
                 for(i = 0; i < page->g.num_keys; i++){
-                    printf("(%ld, %s) ", page->g.record[i].key, page->g.record[i].value);
+                    printf("(%lld, %s) ", page->g.record[i].key, page->g.record[i].value);
                 }
                 printf(" | ");
             }
             else{
                 printf("internal : ");
                 if (page->g.num_keys > 0){
-                    printf("[%lu] ", page->g.next);
+                    printf("[%llu] ", page->g.next);
                     q.push(page->g.next);
                 }
                 for(i = 0; i < page->g.num_keys; i++){
-                    printf("%lu [%lu] ", page->g.entry[i].key, page->g.entry[i].pagenum);
+                    printf("%llu [%llu] ", page->g.entry[i].key, page->g.entry[i].pagenum);
                     q.push(page->g.entry[i].pagenum);
                 }
                 printf(" | ");
@@ -949,16 +949,16 @@ void print_tree(bool verbose){
             pagenum_t pagenum = q.front();
             q.pop();
 
-            printf("pagenum %lu ", pagenum);
+            printf("pagenum %llu ", pagenum);
             file_read_page(pagenum, page);
 
             if (page->g.is_leaf){
-                printf("leaf pagenum : %lu, parent : %lu, is_leaf : %d, num keys : %d, right sibling : %lu",
+                printf("leaf pagenum : %llu, parent : %llu, is_leaf : %d, num keys : %d, right sibling : %llu",
                        pagenum, page->g.parent, page->g.is_leaf, page->g.num_keys, page->g.next);
                 printf(" | ");
             }
             else{
-                printf("internal pagenum : %lu, parent : %lu, is_leaf : %d, num keys : %d, one more : %lu",
+                printf("internal pagenum : %llu, parent : %llu, is_leaf : %d, num keys : %d, one more : %llu",
                        pagenum, page->g.parent, page->g.is_leaf, page->g.num_keys, page->g.next);
 
                 q.push(page->g.next);
