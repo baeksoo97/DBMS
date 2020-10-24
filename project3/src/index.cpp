@@ -196,7 +196,7 @@ int insert_into_page_after_splitting(int table_id, pagenum_t old_pagenum, page_t
     split = cut(INTERNAL_ORDER - 1);
 
     new_page = make_internal_page();
-    new_pagenum = file_alloc_page(table_id);
+    new_pagenum = buffer_alloc_page(table_id);
     old_page->g.num_keys = 0;
     for (i = 0; i < split; i++){
         memcpy(old_page->g.entry + i, temp_entry + i, sizeof(struct entry));
@@ -322,7 +322,7 @@ int insert_into_leaf_after_splitting(int table_id, pagenum_t leaf_pagenum, page_
     }
 
     new_leaf = make_leaf_page();
-    new_leaf_pagenum = file_alloc_page(table_id);
+    new_leaf_pagenum = buffer_alloc_page(table_id);
 
     // Find the index of leaf records that key should be inserted
     insertion_index = 0;
@@ -400,7 +400,7 @@ int insert_into_leaf(int table_id, pagenum_t leaf_pagenum, page_t * leaf, k_t ke
 int insert_into_new_root(int table_id, pagenum_t left_pagenum, page_t * left, k_t key, pagenum_t right_pagenum, page_t * right){
 //    printf("insert_into_new_root\n");
     page_t * root = make_internal_page();
-    pagenum_t root_pagenum = file_alloc_page(table_id);
+    pagenum_t root_pagenum = buffer_alloc_page(table_id);
 
     root->g.parent = 0;
     root->g.is_leaf = 0;
@@ -430,7 +430,7 @@ int insert_into_new_root(int table_id, pagenum_t left_pagenum, page_t * left, k_
 // First insertion: start a new tree.
 int insert_new_tree(int table_id, k_t key, record * pointer){
     page_t * root = make_leaf_page();
-    pagenum_t root_pagenum = file_alloc_page(table_id);
+    pagenum_t root_pagenum = buffer_alloc_page(table_id);
 
     root->g.parent = 0;
     root->g.num_keys++;
@@ -666,7 +666,7 @@ int coalesce_nodes(int table_id, pagenum_t parent_pagenum, page_t * parent, page
 
     delete_entry(table_id, parent_pagenum, k_prime);
 
-    file_free_page(table_id, n_pagenum);
+    buffer_free_page(table_id, n_pagenum);
 
     free_page(parent);
     free_page(n_page);
@@ -738,7 +738,7 @@ int adjust_root(int table_id, pagenum_t root_pagenum){
         file_write_page(table_id, 0, header_page);
     }
 
-    file_free_page(table_id, root_pagenum);
+    buffer_free_page(table_id, root_pagenum);
     free_page(root);
     free_page(new_root);
 

@@ -2,11 +2,12 @@
 // MAIN
 
 int main( int argc, char ** argv ){
-    char input_file[1000];
-    char data_file[1000];
+    char input_file[25];
+    char data_file[25];
     FILE * fp;
     char instruction;
     int table_id = -1;
+    int num_buf = 0;
 
     k_t key;
     char value[120];
@@ -21,6 +22,7 @@ int main( int argc, char ** argv ){
 
         strcpy(data_file, argv[2]);
         table_id = open_table(data_file);
+        printf("table id %dn", table_id);
         while (!feof(fp)){
             fscanf(fp, "%c ", &instruction);
             if (instruction == 'i'){
@@ -41,13 +43,17 @@ int main( int argc, char ** argv ){
         }
         fclose(fp);
         db_print_tree(table_id);
-        close_table(table_id);
+//        close_table(table_id);
     }
 
     usage();
     printf("> ");
     while (scanf("%c", &instruction) != EOF){
         switch (instruction){
+        case 'b':
+            scanf("%d", &num_buf);
+            init_db(num_buf);
+            break;
         case 'o':
             scanf("%s", data_file);
             table_id = open_table(data_file);
