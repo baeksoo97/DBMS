@@ -17,6 +17,8 @@ int index_init_db(int buf_num);
 
 int index_close_table(int table_id = 0);
 
+int index_is_opened(int table_id);
+
 // Find.
 
 pagenum_t find_leaf(int table_id, pagenum_t root_pagenum, k_t key);

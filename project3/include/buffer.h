@@ -20,6 +20,8 @@ int buffer_open_table(const char * pathname);
 
 int buffer_close_table(int table_id);
 
+int buffer_is_opened(int table_id);
+
 pagenum_t buffer_alloc_page(int table_id);
 
 void buffer_free_page(int table_id, pagenum_t pagenum);

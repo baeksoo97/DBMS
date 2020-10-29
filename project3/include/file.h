@@ -78,15 +78,15 @@ extern vector<pair<bool, int> > table_fd_map; // table_id : 1 ~ 10
 // FUNCTION PROTOTYPES
 
 // Try to open file named pathname and init header
-bool is_table_opened(int table_id);
-int get_file_id(int table_id);
-int get_table_id(void);
 int file_set_table(const char * pathname, int fd);
 int file_open_table(const char * pathname);
 
 // Write the pages relating to this table to disk and close the table
 int close_file(int table_id);
 int file_close_table(int table_id);
+
+int file_is_opened(int table_id);
+int get_file_id(int table_id);
 
 // Create a new page
 page_t * make_page();

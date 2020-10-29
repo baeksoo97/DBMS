@@ -16,6 +16,9 @@ int index_close_table(int table_id){
     return buffer_close_table(table_id);
 }
 
+int index_is_opened(int table_id){
+    return buffer_is_opened(table_id);
+}
 // FIND.
 
 /* Traces the path from the root to a leaf, searching by key.

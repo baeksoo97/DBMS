@@ -33,6 +33,8 @@ int shutdown_db(void);
 // Print data file based on B+tree
 void db_print_tree(int table_id);
 
+void db_print_table();
+
 // Second message to the user.
 void usage(void);
 

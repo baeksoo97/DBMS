@@ -9,7 +9,7 @@ int main( int argc, char ** argv ){
     int table_id = -1;
     int num_buf = 0;
 
-    k_t key;
+    k_t key, range;
     char value[120];
 
     if (argc > 1){
@@ -57,11 +57,14 @@ int main( int argc, char ** argv ){
         case 'o':
             scanf("%s", data_file);
             table_id = open_table(data_file);
-            printf("table_id %d\n", table_id);
+            db_print_table();
             break;
         case 'c':
             scanf("%d", &table_id);
             close_table(table_id);
+            break;
+        case 't':
+            db_print_table();
             break;
         case 'd':
             scanf("%d %lld", &table_id, &key);
@@ -71,6 +74,14 @@ int main( int argc, char ** argv ){
             scanf("%d %lld %s", &table_id, &key, value);
             db_insert(table_id, key, value);
             break;
+        case 'I':
+            scanf("%d %lld %lld", &table_id, &key, &range);
+            for(k_t i = key; i <= range; i++){
+                strcpy(value, "test");
+                printf("%s\n", value);
+                db_insert(table_id, i, value);
+            }
+            break;
         case 'f':
             scanf("%d %lld", &table_id, &key);
             db_find(table_id, key, value);
@@ -78,6 +89,9 @@ int main( int argc, char ** argv ){
         case 'p':
             scanf("%d", &table_id);
             db_print_tree(table_id);
+            break;
+        case 's':
+            shutdown_db();
             break;
         case 'q':
             while (getchar() != (int)'\n');

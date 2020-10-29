@@ -6,32 +6,15 @@ vector<pair<bool, int> > table_fd_map(11, make_pair(false, 0));
 // Function Definition
 
 // Utility
-bool is_table_opened(int table_id){
-    if (table_id <= 0 || table_id > 10) return false;
-
-    return table_fd_map[table_id].first;
-}
-
-int get_file_id(int table_id){
-    return table_fd_map[table_id].second;
-}
-
-int get_table_id(void){
-    int table_id;
-    for (table_id = 1; table_id <= 10; table_id++){
-        if (!table_fd_map[table_id].first)
-            return table_id;
-    }
-    return -1;
-}
 
 // Helper function for file_open_table() : set table_id of data file
 int file_set_table(const char * pathname, int fd){
     int table_id;
     string s_pathname(pathname);
     if (!file_table_map.count(s_pathname)){
-        table_id = get_table_id();
-        if (table_id == -1){
+        table_id = (int)file_table_map.size() + 1;
+
+        if (table_id >= 11){
             printf("ERROR FILE_OPEN_TABLE : all of table_ids are already used\n");
             return -1;
         }
@@ -43,7 +26,7 @@ int file_set_table(const char * pathname, int fd){
         table_id = file_table_map[s_pathname];
         table_fd_map[table_id] = make_pair(true, fd);
     }
-    printf("pathname %s, table_id %d, fd %d\n", pathname, table_id, fd);
+
     return table_id;
 }
 
@@ -64,7 +47,7 @@ int file_open_table(const char * pathname){
     }
     else{
         // file doesn't exist
-        if (get_table_id() == -1){
+        if ((int)file_table_map.size() >= 10){
             printf("ERROR FILE_OPEN : num of tables can be made up to 10\n");
             return -1;
         }
@@ -90,21 +73,23 @@ int close_file(int table_id) {
         perror("ERROR FILE_CLOSE_TABLE");
         return -1;
     }
-    printf("close file %d\n", table_id);
+    printf("close table_id %d\n", table_id);
     table_fd_map[table_id].first = false;
+    table_fd_map[table_id].second = 0;
     return 0;
 }
 
 // Write the pages relating to this table to disk and close the table
-int file_close_table(int table_id) {
+int file_close_table(int table_id){
     int i;
     if (table_id == 0){
         // shutdown_db() : Flush all data from buffer and destroy allocated buffer
         for (i = 1; i <= 10; i++){
-            if (table_fd_map[i].first){
+            if (table_fd_map[i].first) {
                 if (close_file(i)) return -1;
             }
         }
+        file_table_map.clear();
     }
     else{
         // write all pages of this table from buffer to disk
@@ -112,6 +97,15 @@ int file_close_table(int table_id) {
     }
 
     return 0;
+}
+
+int file_is_opened(int table_id){
+    if (table_fd_map[table_id].first) return 1;
+    else return 0;
+}
+
+int get_file_id(int table_id){
+    return table_fd_map[table_id].second;
 }
 
 // Create a new page

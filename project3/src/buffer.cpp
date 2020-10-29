@@ -21,8 +21,11 @@ int buffer_close_table(int table_id){
     return file_close_table(table_id);
 }
 
-pagenum_t buffer_alloc_page(int table_id){
+int buffer_is_opened(int table_id){
+    return file_is_opened(table_id);
+}
 
+pagenum_t buffer_alloc_page(int table_id){
     return file_alloc_page(table_id);
 }
 
