@@ -74,7 +74,6 @@ typedef struct page_t {
 
 extern map <string, int> file_table_map;
 extern vector<pair<bool, int> > table_fd_map; // table_id : 1 ~ 10
-extern page_t * header_page;
 
 // FUNCTION PROTOTYPES
 
@@ -99,7 +98,7 @@ void free_page(page_t * page);
 void file_init_header(int table_id);
 
 // Read header from file
-page_t * header(int table_id);
+page_t * get_header(int table_id);
 
 // Allocate an on-disk page from the free page list
 pagenum_t file_alloc_page(int table_id);

@@ -19,8 +19,9 @@ int index_close_table(int table_id = 0);
 
 // Find.
 
-pagenum_t find_leaf(int table_id, k_t key);
-int find(int table_id, k_t key, char * ret_val);
+pagenum_t find_leaf(int table_id, pagenum_t root_pagenum, k_t key);
+int find(int table_id, pagenum_t root_pagenum, k_t key, char * ret_val);
+int _find(int table_id, k_t key, char * ret_val);
 
 // Insertion.
 

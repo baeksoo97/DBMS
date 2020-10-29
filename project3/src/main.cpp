@@ -66,17 +66,14 @@ int main( int argc, char ** argv ){
         case 'd':
             scanf("%d %lld", &table_id, &key);
             db_delete(table_id, key);
-            db_print_tree(table_id);
             break;
         case 'i':
             scanf("%d %lld %s", &table_id, &key, value);
             db_insert(table_id, key, value);
-            db_print_tree(table_id);
             break;
         case 'f':
             scanf("%d %lld", &table_id, &key);
             db_find(table_id, key, value);
-            db_print_tree(table_id);
             break;
         case 'p':
             scanf("%d", &table_id);

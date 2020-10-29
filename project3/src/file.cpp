@@ -2,7 +2,6 @@
 
 map <string, int> file_table_map;
 vector<pair<bool, int> > table_fd_map(11, make_pair(false, 0));
-page_t * header_page = make_page();
 
 // Function Definition
 
@@ -132,14 +131,17 @@ void free_page(page_t * page){
 
 // Initialize header in file
 void file_init_header(int table_id){
+    page_t * header_page = make_page();
     header_page->h.free_pagenum = 0;
     header_page->h.root_pagenum = 0;
     header_page->h.num_pages = 1;
     file_write_page(table_id, 0, header_page);
+    free_page(header_page);
 }
 
 // Read header from file
-page_t * header(int table_id){
+page_t * get_header(int table_id){
+    page_t * header_page = make_page();
     file_read_page(table_id, 0, header_page);
     return header_page;
 }
@@ -147,10 +149,11 @@ page_t * header(int table_id){
 // Allocate an on-disk page from the free page list
 pagenum_t file_alloc_page(int table_id){
     int fd = get_file_id(table_id);
-    pagenum_t pagenum;
+    page_t * header_page = make_page();
     page_t * page = make_page();
+    pagenum_t pagenum;
 
-    header_page = header(table_id);
+    file_read_page(table_id, 0, header_page);
 
     // Allocate an on-disk page more
     if (header_page->h.free_pagenum == 0){
@@ -199,6 +202,7 @@ pagenum_t file_alloc_page(int table_id){
 
     // printf("Alloc Page %lld (h.free_pagenum %lld)\n", pagenum, header()->h.free_pagenum);
 
+    free_page(header_page);
     free_page(page);
 
     return pagenum;
@@ -206,8 +210,10 @@ pagenum_t file_alloc_page(int table_id){
 
 // Free an on-disk page to the free page list
 void file_free_page(int table_id, pagenum_t pagenum){
+    page_t * header_page = make_page();
+
     page_t * page = make_page();
-    header_page = header(table_id);
+    header_page = get_header(table_id);
 
     page->f.next_free_pagenum = header_page->h.free_pagenum;
     header_page->h.free_pagenum = pagenum;
@@ -215,6 +221,7 @@ void file_free_page(int table_id, pagenum_t pagenum){
     file_write_page(table_id, pagenum, page);
     file_write_page(table_id, 0, header_page);
 
+    free_page(header_page);
     free_page(page);
 }
 
