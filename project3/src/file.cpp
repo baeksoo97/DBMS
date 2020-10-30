@@ -1,7 +1,7 @@
 #include "file.h"
 
 map <string, int> file_table_map;
-vector<pair<bool, int> > table_fd_map(11, make_pair(false, 0));
+vector<pair<bool, int> > table_fd_map(TABLE_NUM, make_pair(false, 0));
 
 // Function Definition
 
@@ -14,7 +14,7 @@ int file_set_table(const char * pathname, int fd){
     if (!file_table_map.count(s_pathname)){
         table_id = (int)file_table_map.size() + 1;
 
-        if (table_id >= 11){
+        if (table_id >= TABLE_NUM){
             printf("ERROR FILE_OPEN_TABLE : all of table_ids are already used\n");
             return -1;
         }
@@ -82,8 +82,8 @@ int close_file(int table_id) {
 // Write the pages relating to this table to disk and close the table
 int file_close_table(int table_id){
     int i;
+    // shutdown_db() : Flush all data from buffer and destroy allocated buffer
     if (table_id == 0){
-        // shutdown_db() : Flush all data from buffer and destroy allocated buffer
         for (i = 1; i <= 10; i++){
             if (table_fd_map[i].first) {
                 if (close_file(i)) return -1;
@@ -91,8 +91,8 @@ int file_close_table(int table_id){
         }
         file_table_map.clear();
     }
+    // write all pages of this table from buffer to disk
     else{
-        // write all pages of this table from buffer to disk
         if (close_file(table_id)) return -1;
     }
 

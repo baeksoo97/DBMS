@@ -102,7 +102,7 @@ int main( int argc, char ** argv ){
             break;
         }
         while (getchar() != (int)'\n');
-        printf(" > ");
+        printf("> ");
     }
     printf("\n");
     shutdown_db();
