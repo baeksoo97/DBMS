@@ -1,8 +1,6 @@
 #include "file.h"
 #include "buffer.h"
 
-map <string, int> file_table_map;
-
 // Function Definition
 
 // Utility

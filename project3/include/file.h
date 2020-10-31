@@ -73,7 +73,7 @@ typedef struct page_t {
 
 // GLOBALS
 
-extern map <string, int> file_table_map;
+static map <string, int> file_table_map;
 static vector<pair<bool, int> > table_fd_map(TABLE_NUM, make_pair(false, 0)); // table_id : 1 ~ 10
 
 // FUNCTION PROTOTYPES
