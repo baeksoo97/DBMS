@@ -130,7 +130,7 @@ void file_init_header(int table_id){
     header_page->h.free_pagenum = 0;
     header_page->h.root_pagenum = 0;
     header_page->h.num_pages = 1;
-    file_write_page(table_id, 0, header_page);
+    buffer_write_page(table_id, 0, header_page);
     free_page(header_page);
 }
 
@@ -147,29 +147,14 @@ pagenum_t file_alloc_page(int table_id){
     int fd = get_file_id(table_id);
     page_t * header_page = make_page();
     page_t * page = make_page();
-    pagenum_t pagenum;
+    pagenum_t start_free_pagenum, curr_free_pagenum, added_free_pagenum, pagenum;
 
     buffer_read_page(table_id, 0, header_page);
 
     // Allocate an on-disk page more
     if (header_page->h.free_pagenum == 0){
-        off_t file_size;
-        pagenum_t start_free_pagenum, curr_free_pagenum, added_free_pagenum;
 
-        file_size = lseek(fd, 0, SEEK_END);
-        if (file_size == -1){
-            perror("ERROR FILE_ALLOC_PAGE");
-        }
-
-        // Guarantee the size of file to be the unit of PAGE_SIZE(4096)
-        if (file_size % PAGE_SIZE != 0){
-            file_size = (file_size / PAGE_SIZE + 1) * PAGE_SIZE;
-            if (ftruncate(fd, file_size)){
-                perror("ERROR FILE_ALLOC_PAGE");
-            }
-        }
-
-        start_free_pagenum = file_size / PAGE_SIZE;
+        start_free_pagenum = header_page->h.num_pages;
         curr_free_pagenum = start_free_pagenum;
         for(int i = 0; i < PAGE_NUM_FOR_RESERVE; i++){
             if (i < PAGE_NUM_FOR_RESERVE - 1)

@@ -99,12 +99,15 @@ void db_print_buffer(void){
 // Second message to the user.
 void usage(void){
     printf("Enter any of the following commands after the prompt > \n"
-           "\to <data_file> -- Open <data_file> (a string).\n"
-           "\tc <data_file> -- Close <data_file> (a string).\n"
-           "\ti <k> <value> -- Insert <k> (an integer) <value> (a string).\n"
-           "\tf <k>         -- Find the value under key <k>.\n"
-           "\td <k>         -- Delete key <k> and its associated value.\n"
-           "\tp             -- Print the B+ tree.\n"
-           "\tq             -- Quit. (Or use Ctl-D.)\n"
-           "\t?             -- Print this help message.\n");
+           "\to <data_file>            -- Open <data_file> (a string).\n"
+           "\tc <table_id>             -- Close data_file having <table_id> (an integer).\n"
+           "\ti <table_id> <k> <value> -- Insert <table_id> (an integer) <k> (an integer) <value> (a string).\n"
+           "\tI <table_id> <k1> <k2>   -- Insert <table_id> (an integer) <k> (an integer) <value> (a string).\n"
+           "\tf <table_id> <k>         -- Find <table_id> (an integer) the value under key <k>.\n"
+           "\td <table_id> <k>         -- Delete <table_id> (an integer) key <k> and its associated value.\n"
+           "\tp <table_id>             -- Print the B+ tree.\n"
+           "\tn                        -- Print buffer.\n"
+           "\ts                        -- Shutdown db.\n"
+           "\tq                        -- Quit. (Or use Ctl-D.)\n"
+           "\t?                        -- Print this help message.\n");
 }

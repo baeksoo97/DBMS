@@ -36,7 +36,6 @@ pagenum_t find_leaf(int table_id, pagenum_t root_pagenum, k_t key){
     page = make_page();
     pagenum = root_pagenum;
 
-    printf("root_pagenum %llu\n", pagenum);
     buffer_read_page(table_id, pagenum, page);
     while(!page->g.is_leaf){
         i = 0;
@@ -904,6 +903,7 @@ queue <pagenum_t> q;
 void print_tree(int table_id, bool verbose){
     int i;
     page_t * header_page, * page;
+    pagenum_t pagenum;
 
     header_page = buffer_get_header(table_id);
     page = make_page();
@@ -920,12 +920,11 @@ void print_tree(int table_id, bool verbose){
         int temp_size = q.size();
 
         while(temp_size){
-            pagenum_t pagenum = q.front();
+            pagenum = q.front();
             q.pop();
 
             printf("pagenum %llu ", pagenum);
             buffer_read_page(table_id, pagenum, page);
-
             if (page->g.is_leaf){
                 printf("leaf : ");
                 for(i = 0; i < page->g.num_keys; i++){
@@ -953,7 +952,7 @@ void print_tree(int table_id, bool verbose){
     if (verbose){
         q.push(header_page->h.root_pagenum);
         while(!q.empty()){
-            pagenum_t pagenum = q.front();
+            pagenum = q.front();
             q.pop();
 
             printf("pagenum %llu ", pagenum);

@@ -79,7 +79,6 @@ int main( int argc, char ** argv ){
             scanf("%d %lld %lld", &table_id, &key, &range);
             for(k_t i = key; i <= range; i++){
                 strcpy(value, "test");
-                printf("%s\n", value);
                 db_insert(table_id, i, value);
             }
             break;
