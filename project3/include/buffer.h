@@ -36,7 +36,7 @@ void buffer_close_db(void);
 
 int buffer_open_table(const char * pathname);
 
-void buffer_flush_frame(framenum_t frame_idx, bool option = 0);
+void buffer_flush_frame(framenum_t frame_idx);
 
 void buffer_flush_table(int table_id);
 

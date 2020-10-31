@@ -56,7 +56,7 @@ void buffer_close_db(void){
     buffer_header.tail = NONE;
 }
 
-void buffer_flush_frame(framenum_t frame_idx, bool option){
+void buffer_flush_frame(framenum_t frame_idx){
     int table_id;
     pagenum_t pagenum;
     frame_map_t frame_map;
