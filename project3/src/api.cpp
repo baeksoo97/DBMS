@@ -75,7 +75,7 @@ void db_print_tree(int table_id){
     print_tree(table_id);
 }
 
-void db_print_table(){
+void db_print_table(void){
     int i, fd;
     bool visit;
     printf("%10s %10s - %5s %5s\n", "table_id", "file_name", "fd", "is_open");
@@ -90,6 +90,10 @@ void db_print_table(){
         }
         printf("%10d %10s - %5d %5d\n", i, file_name.c_str(), fd, visit);
     }
+}
+
+void db_print_buffer(void){
+    buffer_print();
 }
 
 // Second message to the user.

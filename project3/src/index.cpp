@@ -36,6 +36,7 @@ pagenum_t find_leaf(int table_id, pagenum_t root_pagenum, k_t key){
     page = make_page();
     pagenum = root_pagenum;
 
+    printf("root_pagenum %llu\n", pagenum);
     buffer_read_page(table_id, pagenum, page);
     while(!page->g.is_leaf){
         i = 0;
@@ -61,7 +62,7 @@ pagenum_t find_leaf(int table_id, pagenum_t root_pagenum, k_t key){
 int find(int table_id, pagenum_t root_pagenum, k_t key, char * ret_val){
     int i;
     page_t * leaf;
-    pagenum_t leaf_pagenum = find_leaf(table_id, root_pagenum,key);
+    pagenum_t leaf_pagenum = find_leaf(table_id, root_pagenum, key);
     if (leaf_pagenum == 0){
         return -1;
     }
@@ -86,8 +87,9 @@ int _find(int table_id, k_t key, char * ret_val){
     page_t * header_page;
     pagenum_t root_pagenum;
 
-    header_page = get_header(table_id);
+    header_page = buffer_get_header(table_id);
     root_pagenum = header_page->h.root_pagenum;
+    printf("find : root pagenum %llu\n", root_pagenum);
     free_page(header_page);
 
     return find(table_id, root_pagenum, key, ret_val);
@@ -429,7 +431,7 @@ int insert_into_new_root(int table_id, pagenum_t left_pagenum, page_t * left, k_
     left->g.parent = root_pagenum;
     right->g.parent = root_pagenum;
 
-    header_page = get_header(table_id);
+    header_page = buffer_get_header(table_id);
     header_page->h.root_pagenum = root_pagenum;
 
     buffer_write_page(table_id, root_pagenum, root);
@@ -458,7 +460,7 @@ int insert_new_tree(int table_id, k_t key, record * pointer){
     root->g.next = 0;
     memcpy(root->g.record + 0, pointer, sizeof(record));
 
-    header_page = get_header(table_id);
+    header_page = buffer_get_header(table_id);
     header_page->h.root_pagenum = root_pagenum;
 
     buffer_write_page(table_id, root_pagenum, root);
@@ -477,7 +479,7 @@ int insert(int table_id, k_t key, char * value){
     page_t * leaf, * header_page;
     pagenum_t leaf_pagenum, root_pagenum;
 
-    header_page = get_header(table_id);
+    header_page = buffer_get_header(table_id);
     root_pagenum = header_page->h.root_pagenum;
     free_page(header_page);
 
@@ -745,7 +747,7 @@ int adjust_root(int table_id, pagenum_t root_pagenum){
     /* Case: empty root.
      */
     new_root = make_page();
-    header_page = get_header(table_id);
+    header_page = buffer_get_header(table_id);
 
     // If it has a child, promote the first (only) child as the new root.
     if (!root->g.is_leaf){
@@ -879,7 +881,7 @@ int delete_key(int table_id, k_t key){
     int key_found;
 
     value = (char *)malloc(120 * sizeof(char));
-    header_page = get_header(table_id);
+    header_page = buffer_get_header(table_id);
     root_pagenum = header_page->h.root_pagenum;
 
     key_found = find(table_id, root_pagenum, key, value);
@@ -903,7 +905,7 @@ void print_tree(int table_id, bool verbose){
     int i;
     page_t * header_page, * page;
 
-    header_page = get_header(table_id);
+    header_page = buffer_get_header(table_id);
     page = make_page();
 
     if (header_page->h.root_pagenum == 0){

@@ -17,8 +17,8 @@ using namespace std;
 #define FREE_PAGE_RESERVED_SIZE 4088
 #define PAGE_HEADER_RESERVED_SIZE 104
 #define VALUE_SIZE 120
-#define INTERNAL_ORDER 248
-#define LEAF_ORDER 31
+#define INTERNAL_ORDER 3
+#define LEAF_ORDER 3
 #define TABLE_NUM 11
 
 // Types.
@@ -99,7 +99,7 @@ void free_page(page_t * page);
 void file_init_header(int table_id);
 
 // Read header from file
-page_t * get_header(int table_id);
+page_t * file_get_header(int table_id);
 
 // Allocate an on-disk page from the free page list
 pagenum_t file_alloc_page(int table_id);

@@ -73,6 +73,7 @@ int main( int argc, char ** argv ){
         case 'i':
             scanf("%d %lld %s", &table_id, &key, value);
             db_insert(table_id, key, value);
+            db_print_tree(table_id);
             break;
         case 'I':
             scanf("%d %lld %lld", &table_id, &key, &range);
@@ -85,6 +86,9 @@ int main( int argc, char ** argv ){
         case 'f':
             scanf("%d %lld", &table_id, &key);
             db_find(table_id, key, value);
+            break;
+        case 'n':
+            db_print_buffer();
             break;
         case 'p':
             scanf("%d", &table_id);

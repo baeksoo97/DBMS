@@ -1,4 +1,5 @@
 #include "file.h"
+#include "buffer.h"
 
 map <string, int> file_table_map;
 vector<pair<bool, int> > table_fd_map(TABLE_NUM, make_pair(false, 0));
@@ -47,7 +48,7 @@ int file_open_table(const char * pathname){
     }
     else{
         // file doesn't exist
-        if ((int)file_table_map.size() >= 10){
+        if ((int)file_table_map.size() >= TABLE_NUM - 1){
             printf("ERROR FILE_OPEN : num of tables can be made up to 10\n");
             return -1;
         }
@@ -84,7 +85,7 @@ int file_close_table(int table_id){
     int i;
     // shutdown_db() : Flush all data from buffer and destroy allocated buffer
     if (table_id == 0){
-        for (i = 1; i <= 10; i++){
+        for (i = 1; i < TABLE_NUM; i++){
             if (table_fd_map[i].first) {
                 if (close_file(i)) return -1;
             }
@@ -134,20 +135,21 @@ void file_init_header(int table_id){
 }
 
 // Read header from file
-page_t * get_header(int table_id){
+page_t * file_get_header(int table_id){
     page_t * header_page = make_page();
-    file_read_page(table_id, 0, header_page);
+    buffer_read_page(table_id, 0, header_page);
     return header_page;
 }
 
 // Allocate an on-disk page from the free page list
 pagenum_t file_alloc_page(int table_id){
+    printf("file_alloc_page\n");
     int fd = get_file_id(table_id);
     page_t * header_page = make_page();
     page_t * page = make_page();
     pagenum_t pagenum;
 
-    file_read_page(table_id, 0, header_page);
+    buffer_read_page(table_id, 0, header_page);
 
     // Allocate an on-disk page more
     if (header_page->h.free_pagenum == 0){
@@ -188,11 +190,11 @@ pagenum_t file_alloc_page(int table_id){
     pagenum = header_page->h.free_pagenum;
 
     // Get free page from on-disk
-    file_read_page(table_id, pagenum, page);
+    buffer_read_page(table_id, pagenum, page);
 
     // Update header page to on-disk
     header_page->h.free_pagenum = page->f.next_free_pagenum;
-    file_write_page(table_id, 0, header_page);
+    buffer_write_page(table_id, 0, header_page);
 
     // printf("Alloc Page %lld (h.free_pagenum %lld)\n", pagenum, header()->h.free_pagenum);
 
@@ -204,16 +206,17 @@ pagenum_t file_alloc_page(int table_id){
 
 // Free an on-disk page to the free page list
 void file_free_page(int table_id, pagenum_t pagenum){
+    printf("file_free_page\n");
     page_t * header_page = make_page();
 
     page_t * page = make_page();
-    header_page = get_header(table_id);
+    header_page = file_get_header(table_id);
 
     page->f.next_free_pagenum = header_page->h.free_pagenum;
     header_page->h.free_pagenum = pagenum;
 
-    file_write_page(table_id, pagenum, page);
-    file_write_page(table_id, 0, header_page);
+    buffer_write_page(table_id, pagenum, page);
+    buffer_write_page(table_id, 0, header_page);
 
     free_page(header_page);
     free_page(page);
