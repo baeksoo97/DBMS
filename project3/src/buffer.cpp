@@ -6,6 +6,11 @@ int buffer_init_db(int num_buf){
         return -1;
     }
 
+    if (num_buf == 0){
+        printf("ERROR BUFFER_INIT_DB : num_buf is 0\n");
+        return -1;
+    }
+
     buffer = (buffer_t *)malloc(num_buf * sizeof(buffer_t));
     if (buffer == NULL){
         perror("ERROR BUFFER_INIT_DB");
@@ -113,7 +118,7 @@ int buffer_is_opened(int table_id){
 }
 
 // Read header from buffer
-page_t * buffer_get_header(int table_id){
+page_t * buffer_read_header(int table_id){
     page_t * header_page = make_page();
     buffer_read_page(table_id, 0, header_page);
     return header_page;
@@ -242,19 +247,24 @@ void buffer_init_frame(int table_id, pagenum_t pagenum, page_t * dest){
 }
 
 framenum_t buffer_find_frame(int table_id, pagenum_t pagenum){
-    frame_map_t frame_map = buffer_header.frame_map[table_id];
+    frame_map_t frame_map;
+    framenum_t frame_idx;
+
+    frame_map = buffer_header.frame_map[table_id];
 
     if (frame_map.count(pagenum) == 0) return -1;
     if (frame_map[pagenum] == NONE) return -1;
 
-    framenum_t frame_idx = frame_map[pagenum];
+    frame_idx = frame_map[pagenum];
 
     return frame_idx;
 }
 
 void buffer_read_page(int table_id, pagenum_t pagenum, page_t * dest){
-    framenum_t frame_idx;
-    frame_idx = buffer_find_frame(table_id, pagenum);
+    if (buffer_header.head == NONE)
+        return file_read_page(table_id, pagenum, dest);
+
+    framenum_t frame_idx = buffer_find_frame(table_id, pagenum);
 
 //    printf("BUFFER_READ_PAGE  : table_id %d, pagenum %llu, frame idx %d ", table_id, pagenum, frame_idx);
 
@@ -270,15 +280,17 @@ void buffer_read_page(int table_id, pagenum_t pagenum, page_t * dest){
         buffer_lru_update(frame_idx);
 //        printf("// read from buffer\n");
     }
+
+    buffer[frame_idx].pin_cnt++;
 //    buffer_print();
 
-//        buffer[frame_idx].pin_cnt++;
 }
 
 void buffer_write_page(int table_id, pagenum_t pagenum, page_t * src){
-    framenum_t frame_idx;
+    if (buffer_header.head == NONE)
+        return file_write_page(table_id, pagenum, src);
 
-    frame_idx = buffer_find_frame(table_id, pagenum);
+    framenum_t frame_idx = buffer_find_frame(table_id, pagenum);
 
 //    printf("BUFFER_WRITE_PAGE : table_id %d, pagenum %llu, frame idx %d ", table_id, pagenum, frame_idx);
 
@@ -294,9 +306,22 @@ void buffer_write_page(int table_id, pagenum_t pagenum, page_t * src){
 //        printf("// write to buffer\n");
     }
     buffer[frame_idx].is_dirty = true;
+    buffer[frame_idx].pin_cnt++;
 //    buffer_print();
 
-//buffer[frame_idx].pin_cnt++;
+}
+
+void buffer_unpin_frame(int table_id, pagenum_t pagenum, int cnt){
+    if (buffer_header.head == NONE) return;
+
+    framenum_t frame_idx = buffer_find_frame(table_id, pagenum);
+
+    if (frame_idx == -1){
+        printf("BUFFER_UNPIN_FRAME frame_idx = -1 : table_id %d, pagenum %llu\n", table_id, pagenum);
+        return;
+    }
+
+    buffer[frame_idx].pin_cnt -= cnt;
 }
 
 void buffer_print(void){

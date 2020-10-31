@@ -27,7 +27,7 @@ int index_is_opened(int table_id){
 pagenum_t find_leaf(int table_id, pagenum_t root_pagenum, k_t key){
     int i;
     page_t * page;
-    pagenum_t pagenum;
+    pagenum_t pagenum, prev_pagenum;
 
     if (root_pagenum == 0){
         return 0;
@@ -35,6 +35,7 @@ pagenum_t find_leaf(int table_id, pagenum_t root_pagenum, k_t key){
 
     page = make_page();
     pagenum = root_pagenum;
+    prev_pagenum = pagenum;
 
     buffer_read_page(table_id, pagenum, page);
     while(!page->g.is_leaf){
@@ -49,8 +50,13 @@ pagenum_t find_leaf(int table_id, pagenum_t root_pagenum, k_t key){
         else
             pagenum = page->g.entry[i - 1].pagenum;
 
+        buffer_unpin_frame(table_id, prev_pagenum);
+
         buffer_read_page(table_id, pagenum, page);
+        prev_pagenum = pagenum;
     }
+
+    buffer_unpin_frame(table_id, pagenum);
 
     free_page(page);
 
@@ -72,12 +78,14 @@ int find(int table_id, pagenum_t root_pagenum, k_t key, char * ret_val){
         if (leaf->g.record[i].key == key) break;
     }
     if (i == leaf->g.num_keys){
+        buffer_unpin_frame(table_id, leaf_pagenum);
         free_page(leaf);
         return -1;
     }
     else{
-        free_page(leaf);
         strcpy(ret_val, leaf->g.record[i].value);
+        buffer_unpin_frame(table_id, leaf_pagenum);
+        free_page(leaf);
         return 0;
     }
 }
@@ -86,11 +94,12 @@ int _find(int table_id, k_t key, char * ret_val){
     page_t * header_page;
     pagenum_t root_pagenum;
 
-    header_page = buffer_get_header(table_id);
+    header_page = buffer_read_header(table_id);
     root_pagenum = header_page->h.root_pagenum;
-    printf("find : root pagenum %llu\n", root_pagenum);
+    buffer_unpin_frame(table_id, 0);
     free_page(header_page);
 
+    printf("find : root pagenum %llu\n", root_pagenum);
     return find(table_id, root_pagenum, key, ret_val);
 }
 
@@ -230,21 +239,28 @@ int insert_into_page_after_splitting(int table_id, pagenum_t old_pagenum, page_t
 
     new_page->g.parent = old_page->g.parent;
 
+    buffer_write_page(table_id, old_pagenum, old_page);
+    buffer_unpin_frame(table_id, old_pagenum, 2);
+
+    // update child
     child = make_page();
     child_pagenum = new_page->g.next;
     buffer_read_page(table_id, child_pagenum, child);
     child->g.parent = new_pagenum;
     buffer_write_page(table_id, child_pagenum, child);
+    buffer_unpin_frame(table_id, child_pagenum, 2);
+
     for (i = 0; i < new_page->g.num_keys; i++){
         child_pagenum = new_page->g.entry[i].pagenum;
         buffer_read_page(table_id, child_pagenum, child);
         child->g.parent = new_pagenum;
         buffer_write_page(table_id, child_pagenum, child);
+        buffer_unpin_frame(table_id, child_pagenum, 2);
     }
     free_page(child);
 
-    buffer_write_page(table_id, old_pagenum, old_page);
     buffer_write_page(table_id, new_pagenum, new_page);
+    buffer_unpin_frame(table_id, new_pagenum);
 
     /* Insert a new key into the parent of the two
      * pages resulting from the split, with
@@ -280,7 +296,7 @@ int insert_into_page(int table_id, pagenum_t n_pagenum, page_t * n_page,
     n_page->g.num_keys++;
 
     buffer_write_page(table_id, n_pagenum, n_page);
-
+    buffer_unpin_frame(table_id, n_pagenum, 2);
     free_page(n_page);
 
     return 0;
@@ -379,6 +395,9 @@ int insert_into_leaf_after_splitting(int table_id, pagenum_t leaf_pagenum, page_
     buffer_write_page(table_id, leaf_pagenum, leaf);
     buffer_write_page(table_id, new_leaf_pagenum, new_leaf);
 
+    buffer_unpin_frame(table_id, leaf_pagenum, 2);
+    buffer_unpin_frame(table_id, new_leaf_pagenum);
+
     return insert_into_parent(table_id, leaf_pagenum, leaf, new_key, new_leaf_pagenum, new_leaf);
 }
 
@@ -401,6 +420,7 @@ int insert_into_leaf(int table_id, pagenum_t leaf_pagenum, page_t * leaf, k_t ke
     leaf->g.num_keys++;
 
     buffer_write_page(table_id, leaf_pagenum, leaf);
+    buffer_unpin_frame(table_id, leaf_pagenum, 2);
 
     free_page(leaf);
     free(pointer);
@@ -417,6 +437,7 @@ int insert_into_new_root(int table_id, pagenum_t left_pagenum, page_t * left, k_
     page_t * root, * header_page;
     pagenum_t root_pagenum;
 
+    // update root
     root = make_internal_page();
     root_pagenum = buffer_alloc_page(table_id);
 
@@ -427,20 +448,28 @@ int insert_into_new_root(int table_id, pagenum_t left_pagenum, page_t * left, k_
     root->g.entry[0].key = key;
     root->g.entry[0].pagenum = right_pagenum;
 
-    left->g.parent = root_pagenum;
-    right->g.parent = root_pagenum;
+    buffer_write_page(table_id, root_pagenum, root);
+    buffer_unpin_frame(table_id, root_pagenum);
+    free_page(root);
 
-    header_page = buffer_get_header(table_id);
+    // update left
+    left->g.parent = root_pagenum;
+    buffer_write_page(table_id, left_pagenum, left);
+    buffer_unpin_frame(table_id, left_pagenum, 1);
+    free_page(left);
+
+    // update right
+    right->g.parent = root_pagenum;
+    buffer_write_page(table_id, right_pagenum, right);
+    buffer_unpin_frame(table_id, right_pagenum, 1);
+    free_page(right);
+
+    // update header
+    header_page = buffer_read_header(table_id);
     header_page->h.root_pagenum = root_pagenum;
 
-    buffer_write_page(table_id, root_pagenum, root);
-    buffer_write_page(table_id, left_pagenum, left);
-    buffer_write_page(table_id, right_pagenum, right);
     buffer_write_page(table_id, 0, header_page);
-
-    free_page(root);
-    free_page(left);
-    free_page(right);
+    buffer_unpin_frame(table_id, 0, 2);
     free_page(header_page);
 
     return 0;
@@ -451,6 +480,7 @@ int insert_new_tree(int table_id, k_t key, record * pointer){
     page_t * root, * header_page;
     pagenum_t root_pagenum;
 
+    // update root
     root = make_leaf_page();
     root_pagenum = buffer_alloc_page(table_id);
 
@@ -459,14 +489,18 @@ int insert_new_tree(int table_id, k_t key, record * pointer){
     root->g.next = 0;
     memcpy(root->g.record + 0, pointer, sizeof(record));
 
-    header_page = buffer_get_header(table_id);
+    buffer_write_page(table_id, root_pagenum, root);
+    buffer_unpin_frame(table_id, root_pagenum);
+    free_page(root);
+
+    // update header
+    header_page = buffer_read_header(table_id);
     header_page->h.root_pagenum = root_pagenum;
 
-    buffer_write_page(table_id, root_pagenum, root);
     buffer_write_page(table_id, 0, header_page);
-
+    buffer_unpin_frame(table_id, 0, 2);
     free_page(header_page);
-    free_page(root);
+
     free(pointer);
 
     return 0;
@@ -478,9 +512,10 @@ int insert(int table_id, k_t key, char * value){
     page_t * leaf, * header_page;
     pagenum_t leaf_pagenum, root_pagenum;
 
-    header_page = buffer_get_header(table_id);
+    header_page = buffer_read_header(table_id);
     root_pagenum = header_page->h.root_pagenum;
     free_page(header_page);
+    buffer_unpin_frame(table_id, 0);
 
     // The current implementation ignores duplicates.
     if (find(table_id, root_pagenum, key, value) == 0){
@@ -746,7 +781,7 @@ int adjust_root(int table_id, pagenum_t root_pagenum){
     /* Case: empty root.
      */
     new_root = make_page();
-    header_page = buffer_get_header(table_id);
+    header_page = buffer_read_header(table_id);
 
     // If it has a child, promote the first (only) child as the new root.
     if (!root->g.is_leaf){
@@ -880,7 +915,7 @@ int delete_key(int table_id, k_t key){
     int key_found;
 
     value = (char *)malloc(120 * sizeof(char));
-    header_page = buffer_get_header(table_id);
+    header_page = buffer_read_header(table_id);
     root_pagenum = header_page->h.root_pagenum;
 
     key_found = find(table_id, root_pagenum, key, value);
@@ -905,7 +940,7 @@ void print_tree(int table_id, bool verbose){
     page_t * header_page, * page;
     pagenum_t pagenum;
 
-    header_page = buffer_get_header(table_id);
+    header_page = buffer_read_header(table_id);
     page = make_page();
 
     if (header_page->h.root_pagenum == 0){

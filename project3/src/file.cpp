@@ -128,6 +128,7 @@ void file_init_header(int table_id){
     header_page->h.root_pagenum = 0;
     header_page->h.num_pages = 1;
     buffer_write_page(table_id, 0, header_page);
+    buffer_unpin_frame(table_id, 0);
     free_page(header_page);
 }
 
@@ -141,12 +142,11 @@ page_t * file_get_header(int table_id){
 // Allocate an on-disk page from the free page list
 pagenum_t file_alloc_page(int table_id){
     printf("file_alloc_page\n");
-    int fd = get_file_id(table_id);
-    page_t * header_page = make_page();
-    page_t * page = make_page();
+    page_t * header_page, * page;
     pagenum_t start_free_pagenum, curr_free_pagenum, added_free_pagenum, pagenum;
 
-    buffer_read_page(table_id, 0, header_page);
+    header_page = file_get_header(table_id);
+    page = make_page();
 
     // Allocate an on-disk page more
     if (header_page->h.free_pagenum == 0){
@@ -178,6 +178,9 @@ pagenum_t file_alloc_page(int table_id){
     header_page->h.free_pagenum = page->f.next_free_pagenum;
     buffer_write_page(table_id, 0, header_page);
 
+    buffer_unpin_frame(table_id, 0, 2);
+    buffer_unpin_frame(table_id, pagenum);
+
     // printf("Alloc Page %lld (h.free_pagenum %lld)\n", pagenum, header()->h.free_pagenum);
 
     free_page(header_page);
@@ -189,16 +192,19 @@ pagenum_t file_alloc_page(int table_id){
 // Free an on-disk page to the free page list
 void file_free_page(int table_id, pagenum_t pagenum){
     printf("file_free_page\n");
-    page_t * header_page = make_page();
+    page_t * header_page, * page;
 
-    page_t * page = make_page();
     header_page = file_get_header(table_id);
+    page = make_page();
 
     page->f.next_free_pagenum = header_page->h.free_pagenum;
     header_page->h.free_pagenum = pagenum;
 
-    buffer_write_page(table_id, pagenum, page);
     buffer_write_page(table_id, 0, header_page);
+    buffer_write_page(table_id, pagenum, page);
+
+    buffer_unpin_frame(table_id, 0, 2);
+    buffer_unpin_frame(table_id, pagenum);
 
     free_page(header_page);
     free_page(page);
@@ -231,6 +237,7 @@ void file_write_page(int table_id, pagenum_t pagenum, const page_t* src){
         printf("ERROR WRITE_PAGE : table_id %d, pagenum %llu, write size %zd\n", table_id, pagenum, write_size);
 }
 
+// Print file_name & table_id & fd map
 void file_print_table(void){
     int i, fd;
     bool visit;

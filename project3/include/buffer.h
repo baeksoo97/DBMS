@@ -44,7 +44,7 @@ int buffer_close_table(int table_id);
 
 int buffer_is_opened(int table_id);
 
-page_t * buffer_get_header(int table_id);
+page_t * buffer_read_header(int table_id);
 
 pagenum_t buffer_alloc_page(int table_id);
 
@@ -64,7 +64,7 @@ void buffer_read_page(int table_id, pagenum_t pagenum, page_t * dest);
 
 void buffer_write_page(int table_id, pagenum_t pagenum, page_t * src);
 
-void buffer_unpin_frame(framenum_t frame_idx);
+void buffer_unpin_frame(int table_id, pagenum_t pagenum, int cnt = 1);
 
 void buffer_print(void);
 #endif //__BUFFER_H__
