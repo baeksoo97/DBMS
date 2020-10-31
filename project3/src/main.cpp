@@ -73,7 +73,7 @@ int main( int argc, char ** argv ){
         case 'i':
             scanf("%d %lld %s", &table_id, &key, value);
             db_insert(table_id, key, value);
-            db_print_tree(table_id);
+//            db_print_tree(table_id);
             break;
         case 'I':
             scanf("%d %lld %lld", &table_id, &key, &range);

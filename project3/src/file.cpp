@@ -133,7 +133,7 @@ void file_init_header(int table_id){
 }
 
 // Read header from file
-page_t * file_get_header(int table_id){
+page_t * file_read_header(int table_id){
     page_t * header_page = make_page();
     buffer_read_page(table_id, 0, header_page);
     return header_page;
@@ -145,7 +145,7 @@ pagenum_t file_alloc_page(int table_id){
     page_t * header_page, * page;
     pagenum_t start_free_pagenum, curr_free_pagenum, added_free_pagenum, pagenum;
 
-    header_page = file_get_header(table_id);
+    header_page = file_read_header(table_id);
     page = make_page();
 
     // Allocate an on-disk page more
@@ -194,7 +194,7 @@ void file_free_page(int table_id, pagenum_t pagenum){
     printf("file_free_page\n");
     page_t * header_page, * page;
 
-    header_page = file_get_header(table_id);
+    header_page = file_read_header(table_id);
     page = make_page();
 
     page->f.next_free_pagenum = header_page->h.free_pagenum;

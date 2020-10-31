@@ -3,7 +3,6 @@
 
 #include <stdio.h>
 #include <string.h> // strcpy, memcpy
-#include <queue>
 #include "buffer.h"
 using namespace std;
 
@@ -66,7 +65,8 @@ int delete_key(int table_id, k_t key);
 
 // Output.
 
-extern queue <pagenum_t> q;
-void print_tree(int table_id, bool verbose = false);
+void index_print_tree(int table_id, bool verbose = false);
+void index_print_table(void);
+void index_print_buffer(void);
 
 #endif //__INDEX_H__

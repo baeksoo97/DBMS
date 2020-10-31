@@ -72,15 +72,15 @@ void db_print_tree(int table_id){
         return;
     }
 
-    print_tree(table_id);
+    index_print_tree(table_id);
 }
 
 void db_print_table(void){
-    file_print_table();
+    index_print_table();
 }
 
 void db_print_buffer(void){
-    buffer_print();
+    index_print_buffer();
 }
 
 // Second message to the user.

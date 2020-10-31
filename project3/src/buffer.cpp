@@ -31,6 +31,7 @@ int buffer_init_db(int num_buf){
     buffer_header.frame_map.resize(TABLE_NUM);
     buffer_header.head = NONE;
     buffer_header.tail = NONE;
+    buffer_header.is_open = true;
 
     return 0;
 }
@@ -59,6 +60,7 @@ void buffer_close_db(void){
     buffer_header.buf_size = 0;
     buffer_header.head = NONE;
     buffer_header.tail = NONE;
+    buffer_header.is_open = false;
 }
 
 void buffer_flush_frame(framenum_t frame_idx){
@@ -70,8 +72,10 @@ void buffer_flush_frame(framenum_t frame_idx){
     table_id = buffer[frame_idx].table_id;
     if (table_id == -1) return;
 
-    pagenum = buffer[frame_idx].pagenum;
-    file_write_page(table_id, pagenum, buffer[frame_idx].frame);
+    if (buffer[frame_idx].is_dirty){
+        pagenum = buffer[frame_idx].pagenum;
+        file_write_page(table_id, pagenum, buffer[frame_idx].frame);
+    }
 
     buffer[frame_idx].table_id = NONE;
     buffer[frame_idx].pagenum = 0;
@@ -86,8 +90,7 @@ void buffer_flush_table(int table_id){
 
     for(i = frame_map.begin(); i != frame_map.end(); i++){
         frame_idx = i->second;
-        if (buffer[frame_idx].is_dirty)
-            buffer_flush_frame(frame_idx);
+        buffer_flush_frame(frame_idx);
     }
 
     buffer_header.frame_map[table_id].clear();
@@ -132,21 +135,21 @@ void buffer_free_page(int table_id, pagenum_t pagenum){
     file_free_page(table_id, pagenum);
 
     // it should be modified
-//    page_t * header_page = file_get_header(table_id);
+//    page_t * header_page = file_read_header(table_id);
 //    file_read_page(table_id, 0, read_page)
 }
 
 // insert frame_idx into the first of lru list
 void buffer_lru_insert(framenum_t frame_idx){
     if (buffer_header.head == NONE && buffer_header.tail == NONE){
-//        printf("// BUFFER_LRU_INSERT : empty frame_idx %d ", frame_idx);
+        printf("// BUFFER_LRU_INSERT : empty frame_idx %d ", frame_idx);
         buffer_header.head = frame_idx;
         buffer_header.tail = frame_idx;
         buffer[frame_idx].prev = frame_idx;
         buffer[frame_idx].next = frame_idx;
     }
     else{
-//        printf("// BUFFER_LRU_INSERT : insert frame_idx %d ", frame_idx);
+        printf("// BUFFER_LRU_INSERT : insert frame_idx %d ", frame_idx);
         buffer[frame_idx].prev = buffer_header.tail;
         buffer[frame_idx].next = buffer_header.head;
         buffer[buffer_header.head].prev = frame_idx;
@@ -158,6 +161,9 @@ void buffer_lru_insert(framenum_t frame_idx){
 // update lru list
 void buffer_lru_update(framenum_t frame_idx){
     // frame_idx is already mru
+    if (!buffer_header.is_open)
+        return;
+
     if (buffer_header.head == frame_idx)
         return;
 
@@ -201,12 +207,10 @@ framenum_t buffer_lru_frame(void){
         frame_pos = buffer_header.frame_map[table_id].find(pagenum);
         buffer_header.frame_map[table_id].erase(frame_pos);
 
-        if (buffer[frame_idx].is_dirty){
-            buffer_flush_frame(frame_idx);
-        }
+        buffer_flush_frame(frame_idx);
     }
 
-//    printf("// BUFFER_FLUSH_FRAME table_id %d pagenum %llu frame_idx %d", table_id, pagenum, frame_idx);
+    printf("// BUFFER_FLUSH_FRAME table_id %d pagenum %llu frame_idx %d", table_id, pagenum, frame_idx);
 
     return frame_idx;
 }
@@ -219,19 +223,19 @@ framenum_t buffer_alloc_frame(void){
     if (buffer_header.buf_size < buffer_header.buf_capacity){
         frame_idx = buffer_header.buf_size++;
         buffer_lru_insert(frame_idx);
-//        printf("// BUFFER_ALLOC empty frame %d ", frame_idx);
+        printf("// BUFFER_ALLOC empty frame %d ", frame_idx);
     }
     // alloc the least recently used frame
     else{
         frame_idx = buffer_lru_frame();
         buffer_lru_update(frame_idx);
-//        printf("// BUFFER_ALLOC lru frame %d ", frame_idx);
+        printf("// BUFFER_ALLOC lru frame %d ", frame_idx);
     }
 
     return frame_idx;
 }
 
-void buffer_init_frame(int table_id, pagenum_t pagenum, page_t * dest){
+int buffer_init_frame(int table_id, pagenum_t pagenum, page_t * dest){
     // get the index of frame which page would be inserted
     framenum_t frame_idx = buffer_alloc_frame();
 
@@ -244,6 +248,7 @@ void buffer_init_frame(int table_id, pagenum_t pagenum, page_t * dest){
 
     buffer_header.frame_map[table_id][pagenum] = frame_idx;
 
+    return frame_idx;
 }
 
 framenum_t buffer_find_frame(int table_id, pagenum_t pagenum){
@@ -261,58 +266,58 @@ framenum_t buffer_find_frame(int table_id, pagenum_t pagenum){
 }
 
 void buffer_read_page(int table_id, pagenum_t pagenum, page_t * dest){
-    if (buffer_header.head == NONE)
+    if (!buffer_header.is_open)
         return file_read_page(table_id, pagenum, dest);
 
     framenum_t frame_idx = buffer_find_frame(table_id, pagenum);
 
-//    printf("BUFFER_READ_PAGE  : table_id %d, pagenum %llu, frame idx %d ", table_id, pagenum, frame_idx);
+    printf("BUFFER_READ_PAGE  : table_id %d, pagenum %llu, frame idx %d ", table_id, pagenum, frame_idx);
 
     // if buffer doesn't have page
     if (frame_idx == -1){
         file_read_page(table_id, pagenum, dest);
-        buffer_init_frame(table_id, pagenum, dest);
-//        printf("// read from disk\n");
+        frame_idx = buffer_init_frame(table_id, pagenum, dest);
+        printf("// read from disk\n");
     }
     // if buffer already has page
     else{
         memcpy(dest, buffer[frame_idx].frame, sizeof(page_t));
         buffer_lru_update(frame_idx);
-//        printf("// read from buffer\n");
+        printf("// read from buffer\n");
     }
 
     buffer[frame_idx].pin_cnt++;
-//    buffer_print();
+    buffer_print();
 
 }
 
 void buffer_write_page(int table_id, pagenum_t pagenum, page_t * src){
-    if (buffer_header.head == NONE)
+    if (!buffer_header.is_open)
         return file_write_page(table_id, pagenum, src);
 
     framenum_t frame_idx = buffer_find_frame(table_id, pagenum);
 
-//    printf("BUFFER_WRITE_PAGE : table_id %d, pagenum %llu, frame idx %d ", table_id, pagenum, frame_idx);
+    printf("BUFFER_WRITE_PAGE : table_id %d, pagenum %llu, frame idx %d ", table_id, pagenum, frame_idx);
 
     // if buffer doesn't have page
     if (frame_idx == -1){
-        buffer_init_frame(table_id, pagenum, src);
-//        printf("// init frame\n");
+        frame_idx = buffer_init_frame(table_id, pagenum, src);
+        printf("// init frame\n");
     }
     // if buffer already has page
     else{
         memcpy(buffer[frame_idx].frame, src, sizeof(page_t));
         buffer_lru_update(frame_idx);
-//        printf("// write to buffer\n");
+        printf("// write to buffer\n");
     }
     buffer[frame_idx].is_dirty = true;
     buffer[frame_idx].pin_cnt++;
-//    buffer_print();
+    buffer_print();
 
 }
 
 void buffer_unpin_frame(int table_id, pagenum_t pagenum, int cnt){
-    if (buffer_header.head == NONE) return;
+    if (!buffer_header.is_open) return;
 
     framenum_t frame_idx = buffer_find_frame(table_id, pagenum);
 
@@ -322,6 +327,7 @@ void buffer_unpin_frame(int table_id, pagenum_t pagenum, int cnt){
     }
 
     buffer[frame_idx].pin_cnt -= cnt;
+    printf("BUFFER_UNPIN_FRAME table_id %d pagenum %llu cnt %d\n", table_id, pagenum, buffer[frame_idx].pin_cnt);
 }
 
 void buffer_print(void){
@@ -344,12 +350,100 @@ void buffer_print(void){
         printf("\n");
     }
 
-    printf("---- LRU list ");
-    while(true){
-        printf("-> %d ", frame_idx);
-        if (frame_idx == buffer_header.tail)
-            break;
-        frame_idx = buffer[frame_idx].next;
+//    printf("---- LRU list ");
+//    while(true){
+//        printf("-> %d ", frame_idx);
+//        if (frame_idx == buffer_header.tail)
+//            break;
+//        frame_idx = buffer[frame_idx].next;
+//    }
+//    printf("\n");
+}
+
+void buffer_print_tree(int table_id, bool verbose){
+
+    int i;
+    page_t * header_page, * page;
+    pagenum_t pagenum;
+
+    header_page = make_page();
+    page = make_page();
+    file_read_page(table_id, 0, header_page);
+
+    if (header_page->h.root_pagenum == 0){
+        printf("Tree is empty\n");
+        printf("----------\n");
+        free_page(page);
+        return;
+    }
+
+    q.push(header_page->h.root_pagenum);
+    while(!q.empty()){
+        int temp_size = q.size();
+
+        while(temp_size){
+            pagenum = q.front();
+            q.pop();
+
+            printf("pagenum %llu ", pagenum);
+            file_read_page(table_id, pagenum, page);
+            if (page->g.is_leaf){
+                printf("leaf : ");
+                for(i = 0; i < page->g.num_keys; i++){
+                    printf("(%lld, %s) ", page->g.record[i].key, page->g.record[i].value);
+                }
+                printf(" | ");
+            }
+            else{
+                printf("internal : ");
+                if (page->g.num_keys > 0){
+                    printf("[%llu] ", page->g.next);
+                    q.push(page->g.next);
+                }
+                for(i = 0; i < page->g.num_keys; i++){
+                    printf("%llu [%llu] ", page->g.entry[i].key, page->g.entry[i].pagenum);
+                    q.push(page->g.entry[i].pagenum);
+                }
+                printf(" | ");
+            }
+            temp_size--;
+        }
+        printf("\n");
+    }
+
+    if (verbose){
+        q.push(header_page->h.root_pagenum);
+        while(!q.empty()){
+            pagenum = q.front();
+            q.pop();
+
+            printf("pagenum %llu ", pagenum);
+            file_read_page(table_id, pagenum, page);
+
+            if (page->g.is_leaf){
+                printf("leaf pagenum : %llu, parent : %llu, is_leaf : %d, num keys : %d, right sibling : %llu",
+                       pagenum, page->g.parent, page->g.is_leaf, page->g.num_keys, page->g.next);
+                printf(" | ");
+            }
+            else{
+                printf("internal pagenum : %llu, parent : %llu, is_leaf : %d, num keys : %d, one more : %llu",
+                       pagenum, page->g.parent, page->g.is_leaf, page->g.num_keys, page->g.next);
+
+                q.push(page->g.next);
+                for(i = 0; i < page->g.num_keys; i++){
+                    q.push(page->g.entry[i].pagenum);
+                }
+
+                printf(" | ");
+            }
+        }
     }
     printf("\n");
+
+    free_page(header_page);
+    free_page(page);
+}
+
+void buffer_print_table(void){
+    file_print_table();
 }

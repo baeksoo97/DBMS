@@ -3,6 +3,7 @@
 
 #include "file.h"
 #include <unordered_map>
+#include <queue>
 
 #define NONE -1
 typedef int framenum_t;
@@ -25,6 +26,7 @@ typedef struct buffer_header_t{
     framenum_t buf_size;
     framenum_t head;
     framenum_t tail;
+    bool is_open;
 } buffer_header_t;
 
 static buffer_t * buffer = NULL;
@@ -54,7 +56,7 @@ void buffer_lru_update(framenum_t frame_idx);
 
 framenum_t buffer_lru_frame(void);
 
-void buffer_init_frame(int table_id, framenum_t frame_idx, pagenum_t pagenum, page_t * dest);
+int buffer_init_frame(int table_id, framenum_t frame_idx, pagenum_t pagenum, page_t * dest);
 
 void buffer_alloc_frame(int table_id, pagenum_t pagenum, page_t * dest);
 
@@ -66,5 +68,9 @@ void buffer_write_page(int table_id, pagenum_t pagenum, page_t * src);
 
 void buffer_unpin_frame(int table_id, pagenum_t pagenum, int cnt = 1);
 
+
+static queue <pagenum_t> q;
+void buffer_print_tree(int table_id, bool verbose = false);
+void buffer_print_table(void);
 void buffer_print(void);
 #endif //__BUFFER_H__

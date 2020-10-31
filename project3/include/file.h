@@ -99,7 +99,7 @@ void free_page(page_t * page);
 void file_init_header(int table_id);
 
 // Read header from file
-page_t * file_get_header(int table_id);
+page_t * file_read_header(int table_id);
 
 // Allocate an on-disk page from the free page list
 pagenum_t file_alloc_page(int table_id);
