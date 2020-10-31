@@ -74,7 +74,7 @@ typedef struct page_t {
 // GLOBALS
 
 extern map <string, int> file_table_map;
-extern vector<pair<bool, int> > table_fd_map; // table_id : 1 ~ 10
+static vector<pair<bool, int> > table_fd_map(TABLE_NUM, make_pair(false, 0)); // table_id : 1 ~ 10
 
 // FUNCTION PROTOTYPES
 
@@ -112,5 +112,7 @@ void file_read_page(int table_id, pagenum_t pagenum, page_t * dest);
 
 // Write an in-memory page(src) to the on-disk page
 void file_write_page(int table_id, pagenum_t pagenum, const page_t * src);
+
+void file_print_table(void);
 
 #endif //__FILE_H__

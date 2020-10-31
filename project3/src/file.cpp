@@ -2,7 +2,6 @@
 #include "buffer.h"
 
 map <string, int> file_table_map;
-vector<pair<bool, int> > table_fd_map(TABLE_NUM, make_pair(false, 0));
 
 // Function Definition
 
@@ -232,4 +231,21 @@ void file_write_page(int table_id, pagenum_t pagenum, const page_t* src){
         perror("ERROR WRITE_PAGE");
     else if (write_size != PAGE_SIZE)
         printf("ERROR WRITE_PAGE : table_id %d, pagenum %llu, write size %zd\n", table_id, pagenum, write_size);
+}
+
+void file_print_table(void){
+    int i, fd;
+    bool visit;
+    printf("%10s %10s - %5s %5s\n", "table_id", "file_name", "fd", "is_open");
+    for(i = 1; i <= 10; i++){
+        visit = table_fd_map[i].first;
+        fd = table_fd_map[i].second;
+        string file_name;
+        for(auto m : file_table_map){
+            if (m.second == i){
+                file_name = m.first;
+            }
+        }
+        printf("%10d %10s - %5d %5d\n", i, file_name.c_str(), fd, visit);
+    }
 }
