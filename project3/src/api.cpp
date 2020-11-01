@@ -33,9 +33,9 @@ int db_find(int table_id, k_t key, char * ret_val){
 
     int ret = _find(table_id, key, ret_val);
     if (ret == 0)
-        printf("find the record : key = %lld, value %s\n", key, ret_val);
+        printf("find the record : key = %ld, value %s\n", key, ret_val);
     else
-        printf("cannot find the record containing key %lld\n", key);
+        printf("cannot find the record containing key %ld\n", key);
 
     return ret;
 }

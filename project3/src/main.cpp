@@ -31,28 +31,28 @@ int main( int argc, char ** argv ){
             db_print_table();
             break;
         case 'd':
-            scanf("%d %lld", &table_id, &key);
+            scanf("%d %ld", &table_id, &key);
             db_delete(table_id, key);
             break;
         case 'D':
-            scanf("%d %lld %lld", &table_id, &key, &range);
+            scanf("%d %ld %ld", &table_id, &key, &range);
             for(k_t i = key; i <= range; i++){
                 db_delete(table_id, i);
             }
             break;
         case 'i':
-            scanf("%d %lld %s", &table_id, &key, value);
+            scanf("%d %ld %s", &table_id, &key, value);
             db_insert(table_id, key, value);
             break;
         case 'I':
-            scanf("%d %lld %lld", &table_id, &key, &range);
+            scanf("%d %ld %ld", &table_id, &key, &range);
             for(k_t i = key; i <= range; i++){
                 strcpy(value, "test");
                 db_insert(table_id, i, value);
             }
             break;
         case 'f':
-            scanf("%d %lld", &table_id, &key);
+            scanf("%d %ld", &table_id, &key);
             db_find(table_id, key, value);
             break;
         case 'n':

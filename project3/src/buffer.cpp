@@ -204,7 +204,7 @@ framenum_t buffer_lru_frame(void){
         buffer_flush_frame(frame_idx);
     }
 
-//    printf("// BUFFER_FLUSH_FRAME table_id %d pagenum %llu frame_idx %d", table_id, pagenum, frame_idx);
+//    printf("// BUFFER_FLUSH_FRAME table_id %d pagenum %lu frame_idx %d", table_id, pagenum, frame_idx);
 
     return frame_idx;
 }
@@ -265,7 +265,7 @@ void buffer_read_page(int table_id, pagenum_t pagenum, page_t * dest){
 
     framenum_t frame_idx = buffer_find_frame(table_id, pagenum);
 
-//    printf("BUFFER_READ_PAGE  : table_id %d, pagenum %llu, frame idx %d ", table_id, pagenum, frame_idx);
+//    printf("BUFFER_READ_PAGE  : table_id %d, pagenum %lu, frame idx %d ", table_id, pagenum, frame_idx);
 
     // if buffer doesn't have page
     if (frame_idx == -1){
@@ -291,7 +291,7 @@ void buffer_write_page(int table_id, pagenum_t pagenum, page_t * src){
 
     framenum_t frame_idx = buffer_find_frame(table_id, pagenum);
 
-//    printf("BUFFER_WRITE_PAGE : table_id %d, pagenum %llu, frame idx %d ", table_id, pagenum, frame_idx);
+//    printf("BUFFER_WRITE_PAGE : table_id %d, pagenum %lu, frame idx %d ", table_id, pagenum, frame_idx);
 
     // if buffer doesn't have page
     if (frame_idx == -1){
@@ -316,12 +316,12 @@ void buffer_unpin_frame(int table_id, pagenum_t pagenum, int cnt){
     framenum_t frame_idx = buffer_find_frame(table_id, pagenum);
 
     if (frame_idx == -1){
-        printf("BUFFER_UNPIN_FRAME frame_idx = -1 : table_id %d, pagenum %llu\n", table_id, pagenum);
+        printf("BUFFER_UNPIN_FRAME frame_idx = -1 : table_id %d, pagenum %lu\n", table_id, pagenum);
         return;
     }
 
     buffer[frame_idx].pin_cnt -= cnt;
-//    printf("BUFFER_UNPIN_FRAME table_id %d pagenum %llu cnt %d\n", table_id, pagenum, buffer[frame_idx].pin_cnt);
+//    printf("BUFFER_UNPIN_FRAME table_id %d pagenum %lu cnt %d\n", table_id, pagenum, buffer[frame_idx].pin_cnt);
 }
 
 // OUTPUT
@@ -342,7 +342,7 @@ void buffer_print(void){
     printf("----------------------------------------BUFFER---------------------------------------\n");
     printf("buffer head %d / tail %d\n", buffer_header.head, buffer_header.tail);
     for(i = 0; i < buffer_header.buf_capacity; i++){
-        printf("frame_idx %d : table_id %d / pagenum %llu / is_dirty %d / ", i, buffer[i].table_id, buffer[i].pagenum, buffer[i].is_dirty);
+        printf("frame_idx %d : table_id %d / pagenum %lu / is_dirty %d / ", i, buffer[i].table_id, buffer[i].pagenum, buffer[i].is_dirty);
         printf("pin_cnt %d / prev %d / next %d\n", buffer[i].pin_cnt, buffer[i].prev, buffer[i].next);
     }
 
@@ -351,7 +351,7 @@ void buffer_print(void){
         frame_map = buffer_header.frame_map[i];
         printf("table_id %3d : ", i);
         for(j = frame_map.begin(); j != frame_map.end(); j++){
-            printf("(%llu, %d) ", j->first, j->second);
+            printf("(%lu, %d) ", j->first, j->second);
         }
         printf("\n");
     }

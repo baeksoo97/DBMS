@@ -181,7 +181,7 @@ pagenum_t file_alloc_page(int table_id){
     buffer_unpin_frame(table_id, 0, 2);
     buffer_unpin_frame(table_id, pagenum);
 
-    // printf("Alloc Page %lld (h.free_pagenum %lld)\n", pagenum, header()->h.free_pagenum);
+    // printf("Alloc Page %ld (h.free_pagenum %ld)\n", pagenum, header()->h.free_pagenum);
 
     free_page(header_page);
     free_page(page);
@@ -221,7 +221,7 @@ void file_read_page(int table_id, pagenum_t pagenum, page_t* dest){
     if (read_size == -1)
         perror("ERROR READ_PAGE");
     else if (read_size != PAGE_SIZE)
-        printf("ERROR READ_PAGE : table_id %d, pagenum %llu, read size %zd\n", table_id, pagenum, read_size);
+        printf("ERROR READ_PAGE : table_id %d, pagenum %lu, read size %zd\n", table_id, pagenum, read_size);
 }
 
 // Write an in-memory page(src) to the on-disk page
@@ -235,7 +235,7 @@ void file_write_page(int table_id, pagenum_t pagenum, const page_t* src){
     if (write_size == -1)
         perror("ERROR WRITE_PAGE");
     else if (write_size != PAGE_SIZE)
-        printf("ERROR WRITE_PAGE : table_id %d, pagenum %llu, write size %zd\n", table_id, pagenum, write_size);
+        printf("ERROR WRITE_PAGE : table_id %d, pagenum %lu, write size %zd\n", table_id, pagenum, write_size);
 }
 
 // Print tree from disk
@@ -263,23 +263,23 @@ void file_print_tree(int table_id, bool verbose){
             pagenum = q.front();
             q.pop();
 
-            printf("pagenum %llu ", pagenum);
+            printf("pagenum %lu ", pagenum);
             file_read_page(table_id, pagenum, page);
             if (page->g.is_leaf){
                 printf("leaf : ");
                 for(i = 0; i < page->g.num_keys; i++){
-                    printf("(%lld, %s) ", page->g.record[i].key, page->g.record[i].value);
+                    printf("(%ld, %s) ", page->g.record[i].key, page->g.record[i].value);
                 }
                 printf(" | ");
             }
             else{
                 printf("internal : ");
                 if (page->g.num_keys > 0){
-                    printf("[%llu] ", page->g.next);
+                    printf("[%lu] ", page->g.next);
                     q.push(page->g.next);
                 }
                 for(i = 0; i < page->g.num_keys; i++){
-                    printf("%llu [%llu] ", page->g.entry[i].key, page->g.entry[i].pagenum);
+                    printf("%lu [%lu] ", page->g.entry[i].key, page->g.entry[i].pagenum);
                     q.push(page->g.entry[i].pagenum);
                 }
                 printf(" | ");
@@ -295,16 +295,16 @@ void file_print_tree(int table_id, bool verbose){
             pagenum = q.front();
             q.pop();
 
-            printf("pagenum %llu ", pagenum);
+            printf("pagenum %lu ", pagenum);
             file_read_page(table_id, pagenum, page);
 
             if (page->g.is_leaf){
-                printf("leaf pagenum : %llu, parent : %llu, is_leaf : %d, num keys : %d, right sibling : %llu",
+                printf("leaf pagenum : %lu, parent : %lu, is_leaf : %d, num keys : %d, right sibling : %lu",
                        pagenum, page->g.parent, page->g.is_leaf, page->g.num_keys, page->g.next);
                 printf(" | ");
             }
             else{
-                printf("internal pagenum : %llu, parent : %llu, is_leaf : %d, num keys : %d, one more : %llu",
+                printf("internal pagenum : %lu, parent : %lu, is_leaf : %d, num keys : %d, one more : %lu",
                        pagenum, page->g.parent, page->g.is_leaf, page->g.num_keys, page->g.next);
 
                 q.push(page->g.next);
