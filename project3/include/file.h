@@ -9,6 +9,7 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <queue>
 using namespace std;
 
 #define PAGE_SIZE 4096
@@ -17,8 +18,8 @@ using namespace std;
 #define FREE_PAGE_RESERVED_SIZE 4088
 #define PAGE_HEADER_RESERVED_SIZE 104
 #define VALUE_SIZE 120
-#define INTERNAL_ORDER 3
-#define LEAF_ORDER 3
+#define INTERNAL_ORDER 248
+#define LEAF_ORDER 31
 #define TABLE_NUM 11
 
 // Types.
@@ -73,7 +74,7 @@ typedef struct page_t {
 
 // GLOBALS
 
-static map <string, int> file_table_map;
+static map<string, int> file_table_map;
 static vector<pair<bool, int> > table_fd_map(TABLE_NUM, make_pair(false, 0)); // table_id : 1 ~ 10
 
 // FUNCTION PROTOTYPES
@@ -113,6 +114,11 @@ void file_read_page(int table_id, pagenum_t pagenum, page_t * dest);
 // Write an in-memory page(src) to the on-disk page
 void file_write_page(int table_id, pagenum_t pagenum, const page_t * src);
 
+// Print tree from disk
+static queue <pagenum_t> q;
+void file_print_tree(int table_id, bool verbose = false);
+
+// Print file_name & table_id & fd map
 void file_print_table(void);
 
 #endif //__FILE_H__

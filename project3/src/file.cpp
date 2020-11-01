@@ -39,7 +39,7 @@ int file_open_table(const char * pathname){
             perror("ERROR FILE_OPEN : cannot open file\n");
             return -1;
         }
-        printf("open already existing file : %d\n", fd);
+//        printf("open already existing file : %d\n", fd);
 
         table_id = file_set_table(pathname, fd);
     }
@@ -55,7 +55,7 @@ int file_open_table(const char * pathname){
             perror("ERROR FILE_OPEN : cannot create file\n");
             return -1;
         }
-        printf("create new file : %d\n", fd);
+//        printf("create new file : %d\n", fd);
 
         table_id = file_set_table(pathname, fd);
         file_init_header(table_id);
@@ -71,7 +71,7 @@ int close_file(int table_id) {
         perror("ERROR FILE_CLOSE_TABLE");
         return -1;
     }
-    printf("close table_id %d\n", table_id);
+
     table_fd_map[table_id].first = false;
     table_fd_map[table_id].second = 0;
     return 0;
@@ -141,7 +141,7 @@ page_t * file_read_header(int table_id){
 
 // Allocate an on-disk page from the free page list
 pagenum_t file_alloc_page(int table_id){
-    printf("file_alloc_page\n");
+//    printf("file_alloc_page\n");
     page_t * header_page, * page;
     pagenum_t start_free_pagenum, curr_free_pagenum, added_free_pagenum, pagenum;
 
@@ -191,7 +191,7 @@ pagenum_t file_alloc_page(int table_id){
 
 // Free an on-disk page to the free page list
 void file_free_page(int table_id, pagenum_t pagenum){
-    printf("file_free_page\n");
+//    printf("file_free_page\n");
     page_t * header_page, * page;
 
     header_page = file_read_header(table_id);
@@ -238,18 +238,103 @@ void file_write_page(int table_id, pagenum_t pagenum, const page_t* src){
         printf("ERROR WRITE_PAGE : table_id %d, pagenum %llu, write size %zd\n", table_id, pagenum, write_size);
 }
 
+// Print tree from disk
+void file_print_tree(int table_id, bool verbose){
+    int i;
+    page_t * header_page, * page;
+    pagenum_t pagenum;
+
+    header_page = make_page();
+    page = make_page();
+    file_read_page(table_id, 0, header_page);
+
+    if (header_page->h.root_pagenum == 0){
+        printf("Tree is empty\n");
+        printf("----------\n");
+        free_page(page);
+        return;
+    }
+
+    q.push(header_page->h.root_pagenum);
+    while(!q.empty()){
+        int temp_size = q.size();
+
+        while(temp_size){
+            pagenum = q.front();
+            q.pop();
+
+            printf("pagenum %llu ", pagenum);
+            file_read_page(table_id, pagenum, page);
+            if (page->g.is_leaf){
+                printf("leaf : ");
+                for(i = 0; i < page->g.num_keys; i++){
+                    printf("(%lld, %s) ", page->g.record[i].key, page->g.record[i].value);
+                }
+                printf(" | ");
+            }
+            else{
+                printf("internal : ");
+                if (page->g.num_keys > 0){
+                    printf("[%llu] ", page->g.next);
+                    q.push(page->g.next);
+                }
+                for(i = 0; i < page->g.num_keys; i++){
+                    printf("%llu [%llu] ", page->g.entry[i].key, page->g.entry[i].pagenum);
+                    q.push(page->g.entry[i].pagenum);
+                }
+                printf(" | ");
+            }
+            temp_size--;
+        }
+        printf("\n");
+    }
+
+    if (verbose){
+        q.push(header_page->h.root_pagenum);
+        while(!q.empty()){
+            pagenum = q.front();
+            q.pop();
+
+            printf("pagenum %llu ", pagenum);
+            file_read_page(table_id, pagenum, page);
+
+            if (page->g.is_leaf){
+                printf("leaf pagenum : %llu, parent : %llu, is_leaf : %d, num keys : %d, right sibling : %llu",
+                       pagenum, page->g.parent, page->g.is_leaf, page->g.num_keys, page->g.next);
+                printf(" | ");
+            }
+            else{
+                printf("internal pagenum : %llu, parent : %llu, is_leaf : %d, num keys : %d, one more : %llu",
+                       pagenum, page->g.parent, page->g.is_leaf, page->g.num_keys, page->g.next);
+
+                q.push(page->g.next);
+                for(i = 0; i < page->g.num_keys; i++){
+                    q.push(page->g.entry[i].pagenum);
+                }
+
+                printf(" | ");
+            }
+        }
+    }
+    printf("\n");
+
+    free_page(header_page);
+    free_page(page);
+}
+
 // Print file_name & table_id & fd map
 void file_print_table(void){
     int i, fd;
     bool visit;
+    map<string, int>::iterator it;
     printf("%10s %10s - %5s %5s\n", "table_id", "file_name", "fd", "is_open");
     for(i = 1; i <= 10; i++){
         visit = table_fd_map[i].first;
         fd = table_fd_map[i].second;
         string file_name;
-        for(auto m : file_table_map){
-            if (m.second == i){
-                file_name = m.first;
+        for(it = file_table_map.begin(); it != file_table_map.end(); it++){
+            if (it->second == i){
+                file_name = it->first;
             }
         }
         printf("%10d %10s - %5d %5d\n", i, file_name.c_str(), fd, visit);

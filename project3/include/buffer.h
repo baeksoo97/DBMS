@@ -3,7 +3,6 @@
 
 #include "file.h"
 #include <unordered_map>
-#include <queue>
 
 #define NONE -1
 typedef int framenum_t;
@@ -31,6 +30,8 @@ typedef struct buffer_header_t{
 
 static buffer_t * buffer = NULL;
 static buffer_header_t buffer_header;
+static int miss_cnt = 0;
+static int hit_cnt = 0;
 
 int buffer_init_db(int num_buf);
 
@@ -68,9 +69,8 @@ void buffer_write_page(int table_id, pagenum_t pagenum, page_t * src);
 
 void buffer_unpin_frame(int table_id, pagenum_t pagenum, int cnt = 1);
 
-
-static queue <pagenum_t> q;
 void buffer_print_tree(int table_id, bool verbose = false);
 void buffer_print_table(void);
 void buffer_print(void);
+
 #endif //__BUFFER_H__

@@ -60,13 +60,11 @@ pagenum_t find_leaf(int table_id, pagenum_t root_pagenum, k_t key){
 
     free_page(page);
 
-    printf("                                                                                                               file_leaf\n");
     return pagenum;
 }
 
 // Master find function.
 int find(int table_id, pagenum_t root_pagenum, k_t key, char * ret_val){
-    printf("                                                                                                               find\n");
     int i;
     page_t * leaf;
     pagenum_t leaf_pagenum = find_leaf(table_id, root_pagenum, key);
@@ -503,7 +501,6 @@ int insert_new_tree(int table_id, k_t key, record * pointer){
     free_page(header_page);
 
     free(pointer);
-    printf("                                                                                                               insert_new_tree\n");
 
     return 0;
 }
@@ -659,7 +656,6 @@ int redistribute_nodes(int table_id, pagenum_t parent_pagenum, page_t * parent,
     free_page(neighbor);
     free_page(parent);
 
-    printf("                                                                                                               redistribute\n");
 
     return 0;
 }
@@ -750,9 +746,6 @@ int coalesce_nodes(int table_id, pagenum_t parent_pagenum, page_t * parent, page
 
     buffer_free_page(table_id, n_pagenum);
 
-    printf("                                                                                                               coalesce\n");
-
-
     free_page(n_page);
     free_page(neighbor);
     free_page(parent);
@@ -790,8 +783,6 @@ int get_neighbor_index(pagenum_t n_pagenum, page_t * n_page, pagenum_t parent_pa
 int adjust_root(int table_id, pagenum_t root_pagenum){
     page_t * root, * new_root, * header_page;
     pagenum_t new_root_pagenum;
-
-    printf("                                                                                                               adjust_root\n");
 
     root = make_page();
     buffer_read_page(table_id, root_pagenum, root);
@@ -866,8 +857,6 @@ pagenum_t remove_entry_from_page(int table_id, pagenum_t n_pagenum, page_t * n_p
     buffer_write_page(table_id, n_pagenum, n_page);
     buffer_unpin_frame(table_id, n_pagenum);
 
-    printf("                                                                                                               remove_entry_From+page\n");
-
     return n_pagenum;
 }
 
@@ -881,8 +870,6 @@ int delete_entry(int table_id, pagenum_t n_pagenum, k_t key){
     k_t k_prime;
     page_t * n_page, * parent, * neighbor;
     pagenum_t parent_pagenum, neighbor_pagenum;
-    printf("                                                                                                               delete_entry\n");
-
 
     n_page = make_page();
     buffer_read_page(table_id, n_pagenum, n_page);
@@ -967,8 +954,6 @@ int delete_key(int table_id, k_t key){
     buffer_unpin_frame(table_id, 0);
     free(header_page);
     free(value);
-
-    printf("                                                                                                               delete_key\n");
 
     if (key_found != -1 && key_leaf_pagenum != 0){
         return delete_entry(table_id, key_leaf_pagenum, key);
