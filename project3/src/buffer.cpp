@@ -41,7 +41,7 @@ int buffer_open_table(const char * pathname){
 }
 
 void buffer_close_db(void){
-    if (buffer_header.buf_capacity == 0){
+    if (!buffer_header.is_open){
         return;
     }
 
@@ -84,6 +84,7 @@ void buffer_flush_frame(framenum_t frame_idx){
 
 void buffer_flush_table(int table_id){
     if (!buffer_header.is_open) return;
+
     framenum_t frame_idx;
     frame_map_t::iterator i;
     frame_map_t frame_map = buffer_header.frame_map[table_id];
