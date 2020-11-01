@@ -33,7 +33,7 @@ pagenum_t find_leaf(int table_id, pagenum_t root_pagenum, k_t key){
         return 0;
     }
 
-    page = make_page();
+    page = index_make_page();
     pagenum = root_pagenum;
     prev_pagenum = pagenum;
 
@@ -58,7 +58,7 @@ pagenum_t find_leaf(int table_id, pagenum_t root_pagenum, k_t key){
 
     buffer_unpin_frame(table_id, pagenum);
 
-    free_page(page);
+    free(page);
 
     return pagenum;
 }
@@ -72,20 +72,20 @@ int find(int table_id, pagenum_t root_pagenum, k_t key, char * ret_val){
         return -1;
     }
 
-    leaf = make_page();
+    leaf = index_make_page();
     buffer_read_page(table_id, leaf_pagenum, leaf);
     for (i = 0; i < leaf->g.num_keys; i++){
         if (leaf->g.record[i].key == key) break;
     }
     if (i == leaf->g.num_keys){
         buffer_unpin_frame(table_id, leaf_pagenum);
-        free_page(leaf);
+        free(leaf);
         return -1;
     }
     else{
         strcpy(ret_val, leaf->g.record[i].value);
         buffer_unpin_frame(table_id, leaf_pagenum);
-        free_page(leaf);
+        free(leaf);
         return 0;
     }
 }
@@ -97,7 +97,7 @@ int _find(int table_id, k_t key, char * ret_val){
     header_page = buffer_read_header(table_id);
     root_pagenum = header_page->h.root_pagenum;
     buffer_unpin_frame(table_id, 0);
-    free_page(header_page);
+    free(header_page);
 
     return find(table_id, root_pagenum, key, ret_val);
 }
@@ -123,8 +123,17 @@ struct record * make_record(k_t key, char * value){
 /* Creates a new general page, which can be adapted
  * to serve as either a leaf or an internal page.
  */
+page_t * index_make_page(void){
+    page_t * page = (page_t *)malloc(sizeof(page_t));
+    if (page == NULL){
+        perror("ERROR index_make_page : Page creation.");
+        exit(EXIT_FAILURE);
+    }
+    return page;
+}
+
 page_t * make_general_page(void){
-    page_t * new_page = make_page();
+    page_t * new_page = index_make_page();
 
     new_page->g.parent = 0;
     new_page->g.is_leaf = 0;
@@ -242,7 +251,7 @@ int insert_into_page_after_splitting(int table_id, pagenum_t old_pagenum, page_t
     buffer_unpin_frame(table_id, old_pagenum, 2);
 
     // update child
-    child = make_page();
+    child = index_make_page();
     child_pagenum = new_page->g.next;
     buffer_read_page(table_id, child_pagenum, child);
     child->g.parent = new_pagenum;
@@ -256,7 +265,7 @@ int insert_into_page_after_splitting(int table_id, pagenum_t old_pagenum, page_t
         buffer_write_page(table_id, child_pagenum, child);
         buffer_unpin_frame(table_id, child_pagenum, 2);
     }
-    free_page(child);
+    free(child);
 
     buffer_write_page(table_id, new_pagenum, new_page);
     buffer_unpin_frame(table_id, new_pagenum);
@@ -296,7 +305,7 @@ int insert_into_page(int table_id, pagenum_t n_pagenum, page_t * n_page,
 
     buffer_write_page(table_id, n_pagenum, n_page);
     buffer_unpin_frame(table_id, n_pagenum, 2);
-    free_page(n_page);
+    free(n_page);
 
     return 0;
 }
@@ -317,13 +326,13 @@ int insert_into_parent(int table_id, pagenum_t left_pagenum, page_t * left, k_t 
     // Case 2 : leaf or page. (Remainder of function body.)
 
     // Find the parent's pointer to the left page.
-    parent = make_page();
+    parent = index_make_page();
     buffer_read_page(table_id, parent_pagenum, parent);
 
     left_index = get_left_index(parent, left_pagenum);
 
-    free_page(left);
-    free_page(right);
+    free(left);
+    free(right);
 
     // Simple Case 2-1 : the new key fits into the page.
     if (parent->g.num_keys < INTERNAL_ORDER){
@@ -421,7 +430,7 @@ int insert_into_leaf(int table_id, pagenum_t leaf_pagenum, page_t * leaf, k_t ke
     buffer_write_page(table_id, leaf_pagenum, leaf);
     buffer_unpin_frame(table_id, leaf_pagenum, 2);
 
-    free_page(leaf);
+    free(leaf);
     free(pointer);
 
     return 0;
@@ -449,19 +458,19 @@ int insert_into_new_root(int table_id, pagenum_t left_pagenum, page_t * left, k_
 
     buffer_write_page(table_id, root_pagenum, root);
     buffer_unpin_frame(table_id, root_pagenum);
-    free_page(root);
+    free(root);
 
     // update left
     left->g.parent = root_pagenum;
     buffer_write_page(table_id, left_pagenum, left);
     buffer_unpin_frame(table_id, left_pagenum, 1);
-    free_page(left);
+    free(left);
 
     // update right
     right->g.parent = root_pagenum;
     buffer_write_page(table_id, right_pagenum, right);
     buffer_unpin_frame(table_id, right_pagenum, 1);
-    free_page(right);
+    free(right);
 
     // update header
     header_page = buffer_read_header(table_id);
@@ -469,7 +478,7 @@ int insert_into_new_root(int table_id, pagenum_t left_pagenum, page_t * left, k_
 
     buffer_write_page(table_id, 0, header_page);
     buffer_unpin_frame(table_id, 0, 2);
-    free_page(header_page);
+    free(header_page);
 
     return 0;
 }
@@ -490,7 +499,7 @@ int insert_new_tree(int table_id, k_t key, record * pointer){
 
     buffer_write_page(table_id, root_pagenum, root);
     buffer_unpin_frame(table_id, root_pagenum);
-    free_page(root);
+    free(root);
 
     // update header
     header_page = buffer_read_header(table_id);
@@ -498,7 +507,7 @@ int insert_new_tree(int table_id, k_t key, record * pointer){
 
     buffer_write_page(table_id, 0, header_page);
     buffer_unpin_frame(table_id, 0, 2);
-    free_page(header_page);
+    free(header_page);
 
     free(pointer);
 
@@ -513,7 +522,7 @@ int insert(int table_id, k_t key, char * value){
 
     header_page = buffer_read_header(table_id);
     root_pagenum = header_page->h.root_pagenum;
-    free_page(header_page);
+    free(header_page);
     buffer_unpin_frame(table_id, 0);
 
     // The current implementation ignores duplicates.
@@ -535,7 +544,7 @@ int insert(int table_id, k_t key, char * value){
         return -1;
     }
 
-    leaf = make_page();
+    leaf = index_make_page();
     buffer_read_page(table_id, leaf_pagenum, leaf);
 
     // Case: leaf has room for key and pointer.
@@ -584,7 +593,7 @@ int redistribute_nodes(int table_id, pagenum_t parent_pagenum, page_t * parent,
             n_page->g.next = neighbor->g.entry[split].pagenum;
             neighbor->g.num_keys--;
 
-            page_t * tmp = make_page();
+            page_t * tmp = index_make_page();
             tmp_pagenum = n_page->g.next;
             buffer_read_page(table_id, tmp_pagenum, tmp);
             tmp->g.parent = n_pagenum;
@@ -598,7 +607,7 @@ int redistribute_nodes(int table_id, pagenum_t parent_pagenum, page_t * parent,
                 buffer_write_page(table_id, tmp_pagenum, tmp);
                 buffer_unpin_frame(table_id, tmp_pagenum, 2);
             }
-            free_page(tmp);
+            free(tmp);
         }
     }
     /* Case: n is the leftmost child.
@@ -628,7 +637,7 @@ int redistribute_nodes(int table_id, pagenum_t parent_pagenum, page_t * parent,
                 memcpy(neighbor->g.entry + j, neighbor->g.entry + i, sizeof(struct entry));
             }
 
-            page_t * tmp = make_page();
+            page_t * tmp = index_make_page();
             for (i = 0; i < n_page->g.num_keys; i++){
                 tmp_pagenum = n_page->g.entry[i].pagenum;
                 buffer_read_page(table_id, tmp_pagenum, tmp);
@@ -636,7 +645,7 @@ int redistribute_nodes(int table_id, pagenum_t parent_pagenum, page_t * parent,
                 buffer_write_page(table_id, tmp_pagenum, tmp);
                 buffer_unpin_frame(table_id, tmp_pagenum, 2);
             }
-            free_page(tmp);
+            free(tmp);
         }
     }
 
@@ -652,9 +661,9 @@ int redistribute_nodes(int table_id, pagenum_t parent_pagenum, page_t * parent,
     buffer_unpin_frame(table_id, neighbor_pagenum, 2);
     buffer_unpin_frame(table_id, parent_pagenum, 2);
 
-    free_page(n_page);
-    free_page(neighbor);
-    free_page(parent);
+    free(n_page);
+    free(neighbor);
+    free(parent);
 
 
     return 0;
@@ -707,7 +716,7 @@ int coalesce_nodes(int table_id, pagenum_t parent_pagenum, page_t * parent, page
 
         // All children must now point up to the same parent.
         // update child
-        tmp = make_page();
+        tmp = index_make_page();
         tmp_pagenum = neighbor->g.next;
         buffer_read_page(table_id, tmp_pagenum, tmp);
         tmp->g.parent = neighbor_pagenum;
@@ -721,7 +730,7 @@ int coalesce_nodes(int table_id, pagenum_t parent_pagenum, page_t * parent, page
             buffer_write_page(table_id, tmp_pagenum, tmp);
             buffer_unpin_frame(table_id, tmp_pagenum, 2);
         }
-        free_page(tmp);
+        free(tmp);
     }
     /* In a leaf, append the keys and pointers of n to the neighbor.
      * Set the neighbor's last pointer to point to what had been n's right neighbor.
@@ -746,9 +755,9 @@ int coalesce_nodes(int table_id, pagenum_t parent_pagenum, page_t * parent, page
 
     buffer_free_page(table_id, n_pagenum);
 
-    free_page(n_page);
-    free_page(neighbor);
-    free_page(parent);
+    free(n_page);
+    free(neighbor);
+    free(parent);
 
     return 0;
 }
@@ -784,7 +793,7 @@ int adjust_root(int table_id, pagenum_t root_pagenum){
     page_t * root, * new_root, * header_page;
     pagenum_t new_root_pagenum;
 
-    root = make_page();
+    root = index_make_page();
     buffer_read_page(table_id, root_pagenum, root);
 
     /* Case: nonempty root.
@@ -793,13 +802,13 @@ int adjust_root(int table_id, pagenum_t root_pagenum){
      */
     if (root->g.num_keys > 0){
         buffer_unpin_frame(table_id, root_pagenum);
-        free_page(root);
+        free(root);
         return 0;
     }
 
     /* Case: empty root.
      */
-    new_root = make_page();
+    new_root = index_make_page();
     header_page = buffer_read_header(table_id);
 
     // If it has a child, promote the first (only) child as the new root.
@@ -825,9 +834,9 @@ int adjust_root(int table_id, pagenum_t root_pagenum){
     buffer_free_page(table_id, root_pagenum);
     buffer_unpin_frame(table_id, root_pagenum);
 
-    free_page(root);
-    free_page(new_root);
-    free_page(header_page);
+    free(root);
+    free(new_root);
+    free(header_page);
 
     return 0;
 }
@@ -871,7 +880,7 @@ int delete_entry(int table_id, pagenum_t n_pagenum, k_t key){
     page_t * n_page, * parent, * neighbor;
     pagenum_t parent_pagenum, neighbor_pagenum;
 
-    n_page = make_page();
+    n_page = index_make_page();
     buffer_read_page(table_id, n_pagenum, n_page);
 
     // Remove key and pointer from node.
@@ -880,7 +889,7 @@ int delete_entry(int table_id, pagenum_t n_pagenum, k_t key){
     /* Case:  deletion from the root.
      */
     if (n_page->g.parent == 0){
-        free_page(n_page);
+        free(n_page);
         buffer_unpin_frame(table_id, n_pagenum);
         return adjust_root(table_id, n_pagenum);
     }
@@ -893,7 +902,7 @@ int delete_entry(int table_id, pagenum_t n_pagenum, k_t key){
      */
     min_keys = 1;
     if (n_page->g.num_keys >= min_keys){
-        free_page(n_page);
+        free(n_page);
         buffer_unpin_frame(table_id, n_pagenum);
         return 0;
     }
@@ -906,7 +915,7 @@ int delete_entry(int table_id, pagenum_t n_pagenum, k_t key){
      * Also find the key(k_prime) in the parent between the pointer to node n and the pointer
      * to the neighbor.
      */
-    parent = make_page();
+    parent = index_make_page();
     parent_pagenum = n_page->g.parent;
     buffer_read_page(table_id, parent_pagenum, parent);
 
@@ -922,7 +931,7 @@ int delete_entry(int table_id, pagenum_t n_pagenum, k_t key){
 
     capacity = n_page->g.is_leaf == 1 ? LEAF_ORDER : INTERNAL_ORDER;
 
-    neighbor = make_page();
+    neighbor = index_make_page();
     buffer_read_page(table_id, neighbor_pagenum, neighbor);
 
     /* Coalescence. */

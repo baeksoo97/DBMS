@@ -27,6 +27,7 @@ int _find(int table_id, k_t key, char * ret_val);
 // Insertion.
 
 struct record * make_record(k_t key, char * value);
+page_t * index_make_page(void);
 page_t * make_general_page(void);
 page_t * make_internal_page(void);
 page_t * make_leaf_page(void);
