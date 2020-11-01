@@ -70,10 +70,15 @@ int main( int argc, char ** argv ){
             scanf("%d %lld", &table_id, &key);
             db_delete(table_id, key);
             break;
+        case 'D':
+            scanf("%d %lld %lld", &table_id, &key, &range);
+            for(k_t i = key; i <= range; i++){
+                db_delete(table_id, i);
+            }
+            break;
         case 'i':
             scanf("%d %lld %s", &table_id, &key, value);
             db_insert(table_id, key, value);
-//            db_print_tree(table_id);
             break;
         case 'I':
             scanf("%d %lld %lld", &table_id, &key, &range);
