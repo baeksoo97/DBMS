@@ -331,6 +331,10 @@ void buffer_unpin_frame(int table_id, pagenum_t pagenum, int cnt){
 }
 
 void buffer_print(void){
+    if (!buffer_header.is_open) {
+        printf("Buffer not opened\n");
+        return;
+    }
     int i;
     printf("----------------------------------------BUFFER---------------------------------------\n");
     printf("buffer head %d / tail %d\n", buffer_header.head, buffer_header.tail);
@@ -338,7 +342,6 @@ void buffer_print(void){
         printf("frame_idx %d : table_id %d / pagenum %llu / is_dirty %d / ", i, buffer[i].table_id, buffer[i].pagenum, buffer[i].is_dirty);
         printf("pin_cnt %d / prev %d / next %d\n", buffer[i].pin_cnt, buffer[i].prev, buffer[i].next);
     }
-    framenum_t frame_idx = buffer_header.head;
 
     printf("----------------------------------------MAPMAP---------------------------------------\n");
     for(i = 1; i < TABLE_NUM; i++){
