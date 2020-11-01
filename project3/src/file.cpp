@@ -200,13 +200,14 @@ void file_free_page(int table_id, pagenum_t pagenum){
     page->f.next_free_pagenum = header_page->h.free_pagenum;
     header_page->h.free_pagenum = pagenum;
 
+    // update header
     buffer_write_page(table_id, 0, header_page);
-    buffer_write_page(table_id, pagenum, page);
-
     buffer_unpin_frame(table_id, 0, 2);
-    buffer_unpin_frame(table_id, pagenum);
-
     free_page(header_page);
+
+    // update page
+    buffer_write_page(table_id, pagenum, page);
+    buffer_unpin_frame(table_id, pagenum);
     free_page(page);
 }
 
