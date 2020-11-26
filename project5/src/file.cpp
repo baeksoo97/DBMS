@@ -128,7 +128,6 @@ void file_init_header(int table_id){
     header_page->h.root_pagenum = 0;
     header_page->h.num_pages = 1;
     buffer_write_page(table_id, 0, header_page);
-    buffer_unpin_frame(table_id, 0);
     free_page(header_page);
 }
 
@@ -178,9 +177,6 @@ pagenum_t file_alloc_page(int table_id){
     header_page->h.free_pagenum = page->f.next_free_pagenum;
     buffer_write_page(table_id, 0, header_page);
 
-    buffer_unpin_frame(table_id, 0, 2);
-    buffer_unpin_frame(table_id, pagenum);
-
     // printf("Alloc Page %ld (h.free_pagenum %ld)\n", pagenum, header()->h.free_pagenum);
 
     free_page(header_page);
@@ -202,12 +198,10 @@ void file_free_page(int table_id, pagenum_t pagenum){
 
     // update header
     buffer_write_page(table_id, 0, header_page);
-    buffer_unpin_frame(table_id, 0, 2);
     free_page(header_page);
 
     // update page
     buffer_write_page(table_id, pagenum, page);
-    buffer_unpin_frame(table_id, pagenum);
     free_page(page);
 }
 

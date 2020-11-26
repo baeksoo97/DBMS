@@ -3,6 +3,7 @@
 
 #include "file.h"
 #include <unordered_map>
+#include <pthread.h>
 
 #define NONE -1
 typedef int framenum_t;
@@ -13,7 +14,7 @@ typedef struct buffer_t{
     int table_id;
     pagenum_t pagenum;
     bool is_dirty;
-    int pin_cnt;
+    pthread_mutex_t page_latch;
     framenum_t prev;
     framenum_t next;
 } buffer_t;

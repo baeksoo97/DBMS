@@ -18,11 +18,21 @@ int init_db(int buf_num);
 // Insert input 'key/value' (record) to data file at the right place
 int db_insert(int table_id, int64_t key, char * value);
 
-// Find the record containing input 'key'
-int db_find(int table_id, int64_t key, char * ret_val);
-
 // Find the matching record and delete it if found
 int db_delete(int table_id, int64_t key);
+
+// Find the record containing input 'key'
+int db_find(int table_id, int64_t key, char * ret_val, int trx_id);
+
+// Find the matching key and modify the values
+int db_update(int table_id, int64_t key, char * values, int trx_id);
+
+// Allocate a transaction structure and initialize it
+int trx_begin(void);
+
+// Clean up the transaction with given trx_id and its related information
+// that has been uesd in your lock manager
+int trx_commit(int trx_id);
 
 // Write the pages relating to this table to disk and close the table
 int close_table(int table_id);

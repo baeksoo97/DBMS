@@ -1,11 +1,28 @@
 #include "api.h"
+#include <pthread.h>
 // MAIN
 
-int main( int argc, char ** argv ){
+void* trx_thread_func(void * arg){
+    trx_begin();
+
+}
+
+void do_transaction(const int thread_num){
+    pthread_t trx_threads[thread_num];
+    for(int i = 0; i < thread_num; i++){
+        pthread_create(&trx_threads[i], 0, trx_thread_func, NULL);
+    }
+    for(int i = 0; i < thread_num; i++){
+        pthread_join(trx_threads[i], NULL);
+    }
+}
+
+int main(int argc, char ** argv){
     char data_file[25];
     char instruction;
     int table_id = -1;
     int num_buf = 0;
+    int trx_id = -1;
 
     k_t key, range;
     char value[120];
@@ -30,6 +47,9 @@ int main( int argc, char ** argv ){
         case 't':
             db_print_table();
             break;
+        case 'T':
+            do_transaction(5);
+            break;
         case 'd':
             scanf("%d %ld", &table_id, &key);
             db_delete(table_id, key);
@@ -52,8 +72,8 @@ int main( int argc, char ** argv ){
             }
             break;
         case 'f':
-            scanf("%d %ld", &table_id, &key);
-            db_find(table_id, key, value);
+            scanf("%d %ld %d", &table_id, &key, &trx_id);
+            db_find(table_id, key, value, trx_id);
             break;
         case 'n':
             db_print_buffer();

@@ -24,12 +24,23 @@ int db_insert(int table_id, k_t key, char * value){
     return insert(table_id, key, value);
 }
 
+// Find the matching record and delete it if found
+int db_delete(int table_id, k_t key){
+    if (!index_is_opened(table_id)){
+        printf("ERROR DB_DELETE : table is not opened\n");
+        return -1;
+    }
+
+    return delete_key(table_id, key);
+}
+
 // Find the record containing input 'key'
-int db_find(int table_id, k_t key, char * ret_val){
+int db_find(int table_id, k_t key, char * ret_val, int trx_id){
     if (!index_is_opened(table_id)){
         printf("ERROR DB_FIND : table is not opened\n");
         return -1;
     }
+
 
     int ret = _find(table_id, key, ret_val);
     if (ret == 0)
@@ -40,14 +51,20 @@ int db_find(int table_id, k_t key, char * ret_val){
     return ret;
 }
 
-// Find the matching record and delete it if found
-int db_delete(int table_id, k_t key){
-    if (!index_is_opened(table_id)){
-        printf("ERROR DB_DELETE : table is not opened\n");
-        return -1;
-    }
+// Find the matching key and modify the values
+int db_update(int table_id, k_t key, char * value, int trx_id){
 
-    return delete_key(table_id, key);
+}
+
+// Allocate a transaction structure and initialize it
+int trx_begin(void){
+
+}
+
+// Clean up the transaction with given trx_id and its related information
+// that has been used in your lock manager.
+int trx_commit(int trx_id){
+
 }
 
 // Write the pages relating to this table to disk and close the table

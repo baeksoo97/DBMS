@@ -22,7 +22,8 @@ int buffer_init_db(int num_buf){
         buffer[i].table_id = NONE;
         buffer[i].pagenum = 0;
         buffer[i].is_dirty = false;
-        buffer[i].pin_cnt = 0;
+        pthread_mutex_init(&buffer[i].page_latch, NULL);
+//        buffer[i].pin_cnt = 0;
         buffer[i].prev = NONE;
         buffer[i].next = NONE;
     }
@@ -79,7 +80,7 @@ void buffer_flush_frame(framenum_t frame_idx){
     buffer[frame_idx].table_id = NONE;
     buffer[frame_idx].pagenum = 0;
     buffer[frame_idx].is_dirty = false;
-    buffer[frame_idx].pin_cnt = 0;
+//    buffer[frame_idx].pin_cnt = 0;
 }
 
 void buffer_flush_table(int table_id){
@@ -188,7 +189,7 @@ framenum_t buffer_lru_frame(void){
     frame_idx = buffer_header.tail;
 
     while(true){
-        if(buffer[frame_idx].pin_cnt == 0) break;
+//        if(buffer[frame_idx].pin_cnt == 0) break;
         if(buffer[frame_idx].prev == buffer_header.head){
             printf("BUFFER_LRU_FRAME : all of frames in buffer is being used\n");
             break;
@@ -240,7 +241,7 @@ int buffer_init_frame(int table_id, pagenum_t pagenum, page_t * dest){
     buffer[frame_idx].table_id = table_id;
     buffer[frame_idx].pagenum = pagenum;
     buffer[frame_idx].is_dirty = 0;
-    buffer[frame_idx].pin_cnt = 0;
+//    buffer[frame_idx].pin_cnt = 0;
 
     buffer_header.frame_map[table_id][pagenum] = frame_idx;
 
@@ -284,7 +285,7 @@ void buffer_read_page(int table_id, pagenum_t pagenum, page_t * dest){
 //        printf("// read from buffer\n");
     }
 
-    buffer[frame_idx].pin_cnt++;
+//    buffer[frame_idx].pin_cnt++;
 }
 
 void buffer_write_page(int table_id, pagenum_t pagenum, page_t * src){
@@ -309,7 +310,7 @@ void buffer_write_page(int table_id, pagenum_t pagenum, page_t * src){
 //        printf("// write to buffer\n");
     }
     buffer[frame_idx].is_dirty = true;
-    buffer[frame_idx].pin_cnt++;
+//    buffer[frame_idx].pin_cnt++;
 }
 
 void buffer_unpin_frame(int table_id, pagenum_t pagenum, int cnt){
@@ -322,7 +323,7 @@ void buffer_unpin_frame(int table_id, pagenum_t pagenum, int cnt){
         return;
     }
 
-    buffer[frame_idx].pin_cnt -= cnt;
+//    buffer[frame_idx].pin_cnt -= cnt;
 //    printf("BUFFER_UNPIN_FRAME table_id %d pagenum %lu cnt %d\n", table_id, pagenum, buffer[frame_idx].pin_cnt);
 }
 
@@ -345,7 +346,7 @@ void buffer_print(void){
     printf("buffer head %d / tail %d\n", buffer_header.head, buffer_header.tail);
     for(i = 0; i < buffer_header.buf_capacity; i++){
         printf("frame_idx %d : table_id %d / pagenum %lu / is_dirty %d / ", i, buffer[i].table_id, buffer[i].pagenum, buffer[i].is_dirty);
-        printf("pin_cnt %d / prev %d / next %d\n", buffer[i].pin_cnt, buffer[i].prev, buffer[i].next);
+        printf("pin_cnt %d / prev %d / next %d\n", 1, buffer[i].prev, buffer[i].next);
     }
 
     printf("----------------------------------------MAPMAP---------------------------------------\n");
