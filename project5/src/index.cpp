@@ -1,4 +1,5 @@
 #include "index.h"
+#include "transaction_manager.h"
 
 // FUNCTION DEFINITIONS.
 
@@ -94,6 +95,121 @@ int _find(int table_id, k_t key, char * ret_val){
 
     return find(table_id, root_pagenum, key, ret_val);
 }
+
+int trx_find(int table_id, k_t key, char * ret_val, int trx_id){
+    int i;
+    page_t * header_page, * page, * leaf;
+    pagenum_t root_pagenum, pagenum;
+    lock_t * lock;
+
+    header_page = buffer_read_header(table_id);
+    root_pagenum = header_page->h.root_pagenum;
+    free(header_page);
+
+    if (root_pagenum == 0){
+        return -1;
+    }
+
+    page = index_make_page();
+    pagenum = root_pagenum;
+    buffer_read_page(table_id, pagenum, page);
+
+    while(!page->g.is_leaf){
+        i = 0;
+        while (i < page->g.num_keys){
+            if (key >= page->g.entry[i].key) i++;
+            else break;
+        }
+
+        if (i == 0)
+            pagenum = page->g.next;
+        else
+            pagenum = page->g.entry[i - 1].pagenum;
+
+        buffer_read_page(table_id, pagenum, page);
+    }
+
+
+    for(i = 0; i < page->g.num_keys; i++){
+        lock = lock_acquire(table_id, page->g.record[i].key, trx_id, LOCK_SHARED);
+        if (lock == NULL) {
+            free(page);
+            return -1;
+        }
+
+        if (page->g.record[i].key == key){
+            strcpy(ret_val, page->g.record[i].value);
+            free(page);
+            return 0;
+        }
+    }
+
+    // key is not found
+    free(page);
+    return -1;
+}
+
+// UPDATE.
+int trx_update(int table_id, k_t key, char * value, int trx_id){
+    int i;
+    page_t * header_page, * page, * leaf;
+    pagenum_t root_pagenum, pagenum;
+    lock_t * lock;
+
+    header_page = buffer_read_header(table_id);
+    root_pagenum = header_page->h.root_pagenum;
+    free(header_page);
+
+    if (root_pagenum == 0){
+        return -1;
+    }
+
+    page = index_make_page();
+    pagenum = root_pagenum;
+    buffer_read_page(table_id, pagenum, page);
+
+    while(!page->g.is_leaf){
+        i = 0;
+        while (i < page->g.num_keys){
+            if (key >= page->g.entry[i].key) i++;
+            else break;
+        }
+
+        if (i == 0)
+            pagenum = page->g.next;
+        else
+            pagenum = page->g.entry[i - 1].pagenum;
+
+        buffer_read_page(table_id, pagenum, page);
+    }
+
+
+    for(i = 0; i < page->g.num_keys; i++){
+        lock = lock_acquire(table_id, page->g.record[i].key, trx_id, LOCK_SHARED);
+        if (lock == NULL) {
+            free(page);
+            return -1;
+        }
+
+        if (page->g.record[i].key == key){
+            lock = lock_acquire(table_id, page->g.record[i].key, trx_id, LOCK_EXCLUSIVE);
+            if (lock == NULL){
+                free(page);
+                return -1;
+            }
+            // trx_logging
+            strcpy(page->g.record[i].value, value);
+            buffer_write_page(table_id, pagenum, page);
+            free(page);
+            return 0;
+        }
+    }
+
+    // key is not found
+    free(page);
+    return -1;
+}
+
 
 // INSERTION.
 

@@ -42,28 +42,31 @@ int db_find(int table_id, k_t key, char * ret_val, int trx_id){
     }
 
 
-    int ret = _find(table_id, key, ret_val);
+    int ret = trx_find(table_id, key, ret_val, trx_id);
     if (ret == 0)
         printf("find the record : key = %ld, value %s\n", key, ret_val);
-    else
+    else{
         printf("cannot find the record containing key %ld\n", key);
+//        trx_abort(); -> lock_release, rollback_results
+    }
 
     return ret;
 }
 
 // Find the matching key and modify the values
 int db_update(int table_id, k_t key, char * value, int trx_id){
+    if (!index_is_opened(table_id)){
+        printf("ERROR DB_UPDATE : table is not opened\n");
+        return -1;
+    }
 
-}
-
-// Allocate a transaction structure and initialize it
-int trx_begin(void){
-
-}
-
-// Clean up the transaction with given trx_id and its related information
-// that has been used in your lock manager.
-int trx_commit(int trx_id){
+    int ret = trx_update(table_id, key, value, trx_id);
+    if (ret == 0)
+        printf("update the record : key = %ld, value %s\n", key, value);
+    else{
+        printf("cannot update the record containing key %ld\n", key);
+//        trx_abort(); -> lock_release, rollback_results
+    }
 
 }
 

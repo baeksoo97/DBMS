@@ -1,30 +1,30 @@
-#ifndef TRANSACTION_H
-#define TRANSACTION_H
+#ifndef LOCK_MANAGER_H
+#define LOCK_MANAGER_H
 
+#include <stdio.h>
 #include <stdint.h>
 #include <pthread.h>
 #include <unordered_map>
-#include <iostream>
 using namespace std;
 
 #define LOCK_SHARED 0
 #define LOCK_EXCLUSIVE 1
 
-typedef struct hash_entry_t hash_entry_t;
+typedef struct lock_entry_t lock_entry_t;
 typedef struct lock_t lock_t;
-typedef pair<int, int64_t> hash_key_t;
+typedef pair<int, int64_t> lock_key_t;
 
-typedef struct hash_entry_t{
+typedef struct lock_entry_t{
     int table_id;
     int64_t record_id;
     lock_t * tail;
     lock_t * head;
-}hash_entry_t;
+}lock_entry_t;
 
-typedef struct lock_t {
+typedef struct lock_t{
     lock_t * prev;
     lock_t * next;
-    hash_entry_t * sentinel;
+    lock_entry_t * sentinel;
     pthread_cond_t cond;
     int lock_mode;
     lock_t * trx_next_lock;
@@ -38,15 +38,9 @@ typedef struct hash_pair {
     }
 }hash_pair;
 
-static unordered_map <hash_key_t, hash_entry_t, hash_pair> hash_table;
-static unordered_map <int, lock_t> trx_manager;
-
-static pthread_mutex_t lock_manager_latch;
-static pthread_mutex_t trx_manager_latch;
-
 /* APIs for lock table */
 // Initialize any data structured required for implementing lock table
-int init_lock_table();
+int init_lock_table(void);
 
 // Allocate and append a new lock object to the lock list
 // of the record having the key
@@ -55,4 +49,5 @@ lock_t* lock_acquire(int table_id, int64_t key, int trx_id, int lock_mode);
 // Remove the lock_obj from the lock list
 int lock_release(lock_t* lock_obj);
 
-#endif //TRANSACTION_H
+
+#endif //LOCK_MANAGER_H

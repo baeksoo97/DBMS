@@ -1,13 +1,66 @@
 #include "api.h"
 #include <pthread.h>
 // MAIN
+#define TEST_NUM 10
+#define TABLE_NUM 3
+#define KEY_NUM 20
 
+char update_val[120];
 void* trx_thread_func(void * arg){
-    trx_begin();
+    char ret_val[120];
+    int table_id, trx_id, result;
+    k_t key;
+    trx_id = trx_begin();
+
+    printf("trx_id : %d, thread_id : %u\n", trx_id, pthread_self());
+
+    for(int i = 0; i < TEST_NUM; i++){
+        table_id = rand() % TABLE_NUM + 1;
+        key = rand() % KEY_NUM + 1;
+        result = db_find(table_id, key, ret_val, trx_id);
+
+        if (result == 0){
+            printf("success\n");
+
+        }
+        else{
+            printf("abort\n");
+            break;
+        }
+    }
+
+    if (result == 0){
+        for(int i = 0; i < TEST_NUM; i++){
+            table_id = rand() % TABLE_NUM + 1;
+            key = rand() % KEY_NUM + 1;
+            result = db_update(table_id, key, update_val, trx_id);
+            if (result == 0){
+                printf("success db_update\n");
+            }
+            else{
+                printf("abort db_update\n");
+                break;
+            }
+        }
+    }
+
+    if (result == 0){
+        trx_commit(trx_id);
+    }
+    else{
+        printf("abort\n");
+    }
+    return NULL;
 
 }
 
 void do_transaction(const int thread_num){
+    char t1[10] = "t1.db", t2[10] = "t2.db", t3[10] = "t3.db";
+    init_db(10);
+    open_table(t1);
+    open_table(t2);
+    open_table(t3);
+
     pthread_t trx_threads[thread_num];
     for(int i = 0; i < thread_num; i++){
         pthread_create(&trx_threads[i], 0, trx_thread_func, NULL);

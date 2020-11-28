@@ -23,6 +23,11 @@ int index_is_opened(int table_id);
 pagenum_t find_leaf(int table_id, pagenum_t root_pagenum, k_t key);
 int find(int table_id, pagenum_t root_pagenum, k_t key, char * ret_val);
 int _find(int table_id, k_t key, char * ret_val);
+int trx_find(int table_id, k_t key, char * ret_val, int trx_id);
+
+// Update.
+
+int trx_update(int table_id, k_t key, char * value, int trx_id);
 
 // Insertion.
 

@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "index.h"
+#include "transaction_manager.h"
 
 // FUNCTION PROTOTYPES.
 
@@ -27,12 +28,6 @@ int db_find(int table_id, int64_t key, char * ret_val, int trx_id);
 // Find the matching key and modify the values
 int db_update(int table_id, int64_t key, char * values, int trx_id);
 
-// Allocate a transaction structure and initialize it
-int trx_begin(void);
-
-// Clean up the transaction with given trx_id and its related information
-// that has been uesd in your lock manager
-int trx_commit(int trx_id);
 
 // Write the pages relating to this table to disk and close the table
 int close_table(int table_id);

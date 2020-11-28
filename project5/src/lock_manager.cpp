@@ -1,28 +1,28 @@
-#include "transaction.h"
+#include "lock_manager.h"
+
+static unordered_map <lock_key_t, lock_entry_t, hash_pair> lock_table;
+static pthread_mutex_t lock_manager_latch;
 
 /*
     Initialize any data structured required for implementing lock table
 */
-int init_lock_table()
-{
-    pthread_mutex_init(&lock_manager_latch, NULL);
-
-    return 0;
+int init_lock_table(void){
+    int ret = pthread_mutex_init(&lock_manager_latch, NULL);
+    if (ret != 0) return -1;
+    else return 0;
 }
 
 /*
     Allocate and append a new lock object to the lock list
     of the record having the key
 */
-lock_t* lock_acquire(int table_id, int64_t key, int trx_id, int lock_mode)
-{
-    unordered_map<hash_key_t, hash_entry_t, hash_pair>::iterator it;
-    hash_entry_t hash_entry;
-    lock_t * lock, * tail;
-
+lock_t* lock_acquire(int table_id, int64_t key, int trx_id, int lock_mode){
     pthread_mutex_lock(&lock_manager_latch);
 
-    it = hash_table.find(make_pair(table_id, key));
+    unordered_map<lock_key_t, lock_entry_t, hash_pair>::iterator it;
+    lock_entry_t lock_entry;
+    lock_t * lock, * tail;
+
     lock = (lock_t *)malloc(sizeof(lock_t));
     if (lock == NULL){
         pthread_mutex_unlock(&lock_manager_latch);
@@ -30,9 +30,11 @@ lock_t* lock_acquire(int table_id, int64_t key, int trx_id, int lock_mode)
     }
 //    printf("lock acquire %d, %d\n", table_id, key);
 
+    it = lock_table.find(make_pair(table_id, key));
+
     // if there is a predecessor's lock object in the lock list,
     // sleep until the predecessor to release its lock.
-    if (it != hash_table.end()){
+    if (it != lock_table.end()){
         tail = it->second.tail;
 
         tail->next = lock;
@@ -41,24 +43,24 @@ lock_t* lock_acquire(int table_id, int64_t key, int trx_id, int lock_mode)
         lock->sentinel = &it->second;
         pthread_cond_init(&(lock->cond), NULL);
 
-        hash_table[make_pair(table_id, key)].tail = lock;
+        lock_table[make_pair(table_id, key)].tail = lock;
 
         pthread_cond_wait(&(lock->cond), &lock_manager_latch);
 
     }
-    // if there is no predecessor's lock object,
-    // return the address of the new lock object.
+        // if there is no predecessor's lock object,
+        // return the address of the new lock object.
     else{
-        hash_entry.table_id = table_id;
-        hash_entry.record_id = key;
-        hash_entry.tail = lock;
-        hash_entry.head = lock;
+        lock_entry.table_id = table_id;
+        lock_entry.record_id = key;
+        lock_entry.tail = lock;
+        lock_entry.head = lock;
 
-        hash_table[make_pair(table_id, key)] = hash_entry;
+        lock_table[make_pair(table_id, key)] = lock_entry;
 
         lock->prev = NULL;
         lock->next = NULL;
-        lock->sentinel = &hash_table[make_pair(table_id, key)];
+        lock->sentinel = &lock_table[make_pair(table_id, key)];
         pthread_cond_init(&(lock->cond), NULL);
     }
 
@@ -82,12 +84,12 @@ int lock_release(lock_t* lock_obj)
 
     }
     else{
-        hash_entry_t * hash_entry = lock_obj->sentinel;
-        hash_entry->head = NULL;
-        hash_entry->tail = NULL;
-        hash_key_t hash_key = make_pair(hash_entry->table_id, hash_entry->record_id);
+        lock_entry_t * lock_entry = lock_obj->sentinel;
+        lock_entry->head = NULL;
+        lock_entry->tail = NULL;
+        lock_key_t hash_key = make_pair(lock_entry->table_id, lock_entry->record_id);
 
-        hash_table.erase(hash_table.find(hash_key));
+        lock_table.erase(lock_table.find(hash_key));
     }
 
     free(lock_obj);
