@@ -60,7 +60,7 @@ lock_t* lock_acquire(int table_id, int64_t key, int trx_id, int lock_mode);
 /*
  * Remove the lock_obj from the lock list
  */
-int lock_release(lock_t* lock_obj, bool is_aborted);
+int lock_release(lock_t* lock_obj);
 
 
 #endif //LOCK_MANAGER_H

@@ -72,10 +72,6 @@ typedef struct page_t {
     };
 } page_t;
 
-// GLOBALS
-
-static map<string, int> file_table_map;
-static vector<pair<bool, int> > table_fd_map(TABLE_NUM, make_pair(false, 0)); // table_id : 1 ~ 10
 
 // FUNCTION PROTOTYPES
 
@@ -115,7 +111,6 @@ void file_read_page(int table_id, pagenum_t pagenum, page_t * dest);
 void file_write_page(int table_id, pagenum_t pagenum, const page_t * src);
 
 // Print tree from disk
-static queue <pagenum_t> q;
 void file_print_tree(int table_id, bool verbose = false);
 
 // Print file_name & table_id & fd map

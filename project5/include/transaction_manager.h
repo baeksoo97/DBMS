@@ -20,10 +20,8 @@ typedef struct trx_entry_t{
     int trx_id;
     lock_t * head;
     lock_t * tail;
-    bool is_aborted;
     unordered_map <log_key_t, log_t, hash_pair> log_map;
 }trx_entry_t;
-
 
 /*
  * Allocate a transaction structure and initialize it
@@ -36,6 +34,7 @@ int trx_begin(void);
  */
 int trx_commit(int trx_id);
 
+bool check_trx_abort(int trx_id);
 void trx_abort(int trx_id);
 
 /*

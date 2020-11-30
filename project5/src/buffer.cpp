@@ -1,6 +1,10 @@
 #include "buffer.h"
 
-static pthread_mutex_t buffer_latch;
+buffer_t * buffer = NULL;
+buffer_header_t buffer_header;
+int miss_cnt = 0;
+int hit_cnt = 0;
+pthread_mutex_t buffer_latch;
 
 int buffer_init_db(int num_buf){
     if (buffer_header.buf_capacity != 0){
@@ -192,16 +196,13 @@ framenum_t buffer_lru_frame(void){
 
     frame_idx = buffer_header.tail;
 
-    while(true){
-//        if(buffer[frame_idx].pin_cnt == 0) break;
-        if(buffer[frame_idx].prev == buffer_header.head){
-            printf("BUFFER_LRU_FRAME : all of frames in buffer is being used\n");
+    while (true) {
+        if (pthread_mutex_trylock(&buffer[frame_idx].page_latch) == 0)
             break;
-        }
-        frame_idx = buffer[frame_idx].prev;
+        else
+            frame_idx = buffer[frame_idx].prev;
     }
 
-    pthread_mutex_lock(&buffer[frame_idx].page_latch);
 
     // remove <pagenum, frame_idx> from frame_map
     table_id = buffer[frame_idx].table_id;
@@ -225,7 +226,9 @@ framenum_t buffer_alloc_frame(void){
     // alloc empty frame
     if (buffer_header.buf_size < buffer_header.buf_capacity){
         frame_idx = buffer_header.buf_size++;
+
         pthread_mutex_lock(&buffer[frame_idx].page_latch);
+
         buffer_lru_insert(frame_idx);
 //        printf("// BUFFER_ALLOC empty frame %d ", frame_idx);
     }
@@ -256,15 +259,27 @@ int buffer_init_frame(int table_id, pagenum_t pagenum, page_t * dest){
 }
 
 framenum_t buffer_find_frame(int table_id, pagenum_t pagenum){
+
+    pthread_mutex_lock(&buffer_latch);
+
     frame_map_t frame_map;
     framenum_t frame_idx;
 
     frame_map = buffer_header.frame_map[table_id];
 
-    if (frame_map.count(pagenum) == 0) return -1;
-    if (frame_map[pagenum] == NONE) return -1;
+    if (frame_map.count(pagenum) == 0) {
+        return -1;
+    }
+    if (frame_map[pagenum] == NONE) {
+        return -1;
+    }
 
     frame_idx = frame_map[pagenum];
+
+    if (pthread_mutex_trylock(&buffer[frame_idx].page_latch) != 0) {
+        pthread_mutex_unlock(&buffer_latch);
+        return -2;
+    }
 
     return frame_idx;
 }
@@ -273,59 +288,64 @@ void buffer_read_page(int table_id, pagenum_t pagenum, page_t * dest){
     if (!buffer_header.is_open)
         return file_read_page(table_id, pagenum, dest);
 
-    pthread_mutex_lock(&buffer_latch);
     framenum_t frame_idx = buffer_find_frame(table_id, pagenum);
 
-//    printf("BUFFER_READ_PAGE  : table_id %d, pagenum %lu, frame idx %d ", table_id, pagenum, frame_idx);
+    while (frame_idx == -2)
+        frame_idx = buffer_find_frame(table_id, pagenum);
+
+    printf("BUFFER_READ_PAGE  : table_id %d, pagenum %lu, frame idx %d \n", table_id, pagenum, frame_idx);
 
     // if buffer doesn't have page
     if (frame_idx == -1){
         file_read_page(table_id, pagenum, dest);
 
         frame_idx = buffer_init_frame(table_id, pagenum, dest);
-        miss_cnt++;
+
+        pthread_mutex_unlock(&buffer_latch);
+        pthread_mutex_unlock(&buffer[frame_idx].page_latch);
 //        printf("// read from disk\n");
     }
     // if buffer already has page
     else{
-        pthread_mutex_lock(&buffer[frame_idx].page_latch);
         memcpy(dest, buffer[frame_idx].frame, sizeof(page_t));
         buffer_lru_update(frame_idx);
-        hit_cnt++;
+        pthread_mutex_unlock(&buffer_latch);
+        pthread_mutex_unlock(&buffer[frame_idx].page_latch);
 //        printf("// read from buffer\n");
     }
 
-    pthread_mutex_unlock(&buffer_latch);
-    pthread_mutex_unlock(&buffer[frame_idx].page_latch);
 }
 
 void buffer_write_page(int table_id, pagenum_t pagenum, page_t * src){
     if (!buffer_header.is_open)
         return file_write_page(table_id, pagenum, src);
 
-    pthread_mutex_lock(&buffer_latch);
     framenum_t frame_idx = buffer_find_frame(table_id, pagenum);
 
-//    printf("BUFFER_WRITE_PAGE : table_id %d, pagenum %lu, frame idx %d ", table_id, pagenum, frame_idx);
+    while (frame_idx == -2)
+        frame_idx = buffer_find_frame(table_id, pagenum);
+
+    printf("BUFFER_WRITE_PAGE : table_id %d, pagenum %lu, frame idx %d \n", table_id, pagenum, frame_idx);
 
     // if buffer doesn't have page
     if (frame_idx == -1){
         frame_idx = buffer_init_frame(table_id, pagenum, src);
-        miss_cnt++;
+        buffer[frame_idx].is_dirty = true;
+
+        pthread_mutex_unlock(&buffer_latch);
+        pthread_mutex_unlock(&buffer[frame_idx].page_latch);
 //        printf("// init frame\n");
     }
     // if buffer already has page
     else{
         memcpy(buffer[frame_idx].frame, src, sizeof(page_t));
         buffer_lru_update(frame_idx);
-        hit_cnt++;
+        buffer[frame_idx].is_dirty = true;
+
+        pthread_mutex_unlock(&buffer_latch);
+        pthread_mutex_unlock(&buffer[frame_idx].page_latch);
 //        printf("// write to buffer\n");
     }
-
-    buffer[frame_idx].is_dirty = true;
-
-    pthread_mutex_unlock(&buffer_latch);
-    pthread_mutex_unlock(&buffer[frame_idx].page_latch);
 }
 
 // OUTPUT

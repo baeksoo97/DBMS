@@ -29,11 +29,6 @@ typedef struct buffer_header_t{
     bool is_open;
 } buffer_header_t;
 
-static buffer_t * buffer = NULL;
-static buffer_header_t buffer_header;
-static int miss_cnt = 0;
-static int hit_cnt = 0;
-
 int buffer_init_db(int num_buf);
 
 void buffer_close_db(void);

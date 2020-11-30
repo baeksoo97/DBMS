@@ -1,9 +1,9 @@
 #include "transaction_manager.h"
 #include "index.h"
 
-static unordered_map <int, trx_entry_t> trx_manager;
-static pthread_mutex_t trx_manager_latch = PTHREAD_MUTEX_INITIALIZER;
-static int trx_cnt = 0;
+unordered_map <int, trx_entry_t> trx_manager;
+pthread_mutex_t trx_manager_latch = PTHREAD_MUTEX_INITIALIZER;
+int trx_cnt = 0;
 
 /*
  * Allocate a transaction structure and initialize it
@@ -14,12 +14,13 @@ int trx_begin(void){
     trx_entry_t trx;
     trx.trx_id = ++trx_cnt;
     trx.head = NULL;
-    trx.is_aborted = false;
+    trx.tail = NULL;
 
     trx_manager[trx.trx_id] = trx;
 
     if (trx.trx_id == 0){
         perror("ERROR TRX_BEGIN");
+        pthread_mutex_unlock(&trx_manager_latch);
         return -1;
     }
 
@@ -42,13 +43,14 @@ int trx_commit(int trx_id){
     while(lock != NULL){
         tmp_lock = lock;
         lock = lock->trx_next_lock;
-        lock_release(tmp_lock, false); // strict two phase lock
+        lock_release(tmp_lock); // strict two phase lock
     }
 
     trx_manager.erase(trx_id);
 
     if (trx_id == 0){
         perror("ERROR TRX_COMMIT");
+        pthread_mutex_unlock(&trx_manager_latch);
         return -1;
     }
 
@@ -57,8 +59,25 @@ int trx_commit(int trx_id){
     return trx_id;
 }
 
+// return 0 if trx is aborted
+bool check_trx_abort(int trx_id){
+    pthread_mutex_lock(&trx_manager_latch);
+    if (trx_manager.count(trx_id) == 0) {
+        pthread_mutex_unlock(&trx_manager_latch);
+        return 0;
+    }
+    else {
+        pthread_mutex_unlock(&trx_manager_latch);
+        return -1;
+    }
+}
+
 void trx_abort(int trx_id){
     pthread_mutex_lock(&trx_manager_latch);
+    if (trx_manager.count(trx_id) == 0){
+        pthread_mutex_unlock(&trx_manager_latch);
+        return;
+    }
 
     lock_t * lock_obj, * tmp_lock_obj;
     int table_id;
@@ -81,13 +100,12 @@ void trx_abort(int trx_id){
     lock_obj = trx_manager[trx_id].head;
     while(lock_obj != NULL){
         tmp_lock_obj = lock_obj;
-        lock_release(tmp_lock_obj, true);
+        lock_release(tmp_lock_obj);
         lock_obj = lock_obj->trx_next_lock;
     }
     trx_manager.erase(trx_id);
 
     pthread_mutex_unlock(&trx_manager_latch);
-    pthread_mutex_unlock(&lock_manager_latch);
 }
 
 /*
@@ -95,6 +113,7 @@ void trx_abort(int trx_id){
  */
 void trx_link_lock(lock_t * lock_obj){
     int trx_id;
+    pthread_mutex_lock(&trx_manager_latch);
 
     trx_id = lock_obj->owner_trx_id;
 
@@ -102,6 +121,7 @@ void trx_link_lock(lock_t * lock_obj){
     // just link to the head of trx entry
     if (trx_manager[trx_id].head == NULL){
         trx_manager[trx_id].head = lock_obj;
+
     }
     // if there are already other operations in trx entry,
     // update the lock_obj and the tail
@@ -112,30 +132,41 @@ void trx_link_lock(lock_t * lock_obj){
 
     // update the tail of trx entry
     trx_manager[trx_id].tail = lock_obj;
+    pthread_mutex_unlock(&trx_manager_latch);
 }
-
 
 /*
  * Unlink lock_obj to the transaction entry of transaction manager
  */
 void trx_unlink_lock(lock_t * lock_obj){
+    pthread_mutex_lock(&trx_manager_latch);
     int trx_id;
 
     trx_id = lock_obj->owner_trx_id;
 
     // if the lock_obj is the head of the trx entry,
     // update the head of trx entry
-    if (trx_manager[trx_id].head == lock_obj){
+    if (trx_manager[trx_id].head == lock_obj && trx_manager[trx_id].tail == lock_obj){
+        trx_manager[trx_id].head = NULL;
+        trx_manager[trx_id].tail = NULL;
+    }
+    else if (trx_manager[trx_id].head == lock_obj){
         trx_manager[trx_id].head = lock_obj->trx_next_lock;
-        lock_obj->trx_next_lock->prev = NULL;
+        lock_obj->trx_next_lock->trx_prev_lock= NULL;
+    }
+    else if (trx_manager[trx_id].tail == lock_obj){
+        trx_manager[trx_id].tail = lock_obj->trx_prev_lock;
+        lock_obj->trx_prev_lock->trx_next_lock = NULL;
     }
     else{
         lock_obj->trx_prev_lock->trx_next_lock = lock_obj->trx_next_lock;
         lock_obj->trx_next_lock->trx_prev_lock = lock_obj->trx_prev_lock;
     }
+    pthread_mutex_unlock(&trx_manager_latch);
 }
 
 void trx_write_log(lock_t * lock_obj, char * old_value){
+    pthread_mutex_lock(&trx_manager_latch);
     int table_id, trx_id;
     int64_t key;
     log_t log;
@@ -151,6 +182,8 @@ void trx_write_log(lock_t * lock_obj, char * old_value){
 
         trx_manager[trx_id].log_map[make_pair(table_id, key)] = log;
     }
+
+    pthread_mutex_unlock(&trx_manager_latch);
 }
 
 set<int> visit_trx(int trx_id, set<int> visit_set){
@@ -221,5 +254,4 @@ set<int> get_wait_for_graph(lock_t * lock_obj, set<int> visit_set){
     }
 
     return visit_set;
-
 }

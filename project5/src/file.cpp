@@ -1,6 +1,10 @@
 #include "file.h"
 #include "buffer.h"
+// GLOBALS
 
+map<string, int> file_table_map;
+vector<pair<bool, int> > table_fd_map(TABLE_NUM, make_pair(false, 0)); // table_id : 1 ~ 10
+queue <pagenum_t> q;
 // Function Definition
 
 // Utility

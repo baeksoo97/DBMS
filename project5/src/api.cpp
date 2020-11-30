@@ -11,7 +11,8 @@ int open_table(char * pathname){
 
 // Initialize buffer pool with given number and buffer manager
 int init_db(int buf_num){
-    if (!init_lock_table()){
+    if (init_lock_table() != 0){
+        printf("ERROR INIT LOCK TABLE\n");
         return -1;
     }
     return index_init_db(buf_num);
@@ -44,6 +45,11 @@ int db_find(int table_id, k_t key, char * ret_val, int trx_id){
         return -1;
     }
 
+    if (check_trx_abort(trx_id) == 0) {
+        printf("ERROR DB_FIND : trx is already aborted -> trx_id %d\n", trx_id);
+        return -1;
+    }
+
     int ret = trx_find(table_id, key, ret_val, trx_id);
 
     if (ret != 0) {
@@ -61,6 +67,11 @@ int db_find(int table_id, k_t key, char * ret_val, int trx_id){
 int db_update(int table_id, k_t key, char * value, int trx_id){
     if (!index_is_opened(table_id)){
         printf("ERROR DB_UPDATE : table is not opened\n");
+        return -1;
+    }
+
+    if (check_trx_abort(trx_id) == 0) {
+        printf("ERROR DB_UPDATE : trx is already aborted -> trx_id %d\n", trx_id);
         return -1;
     }
 

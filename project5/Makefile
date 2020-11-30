@@ -19,7 +19,7 @@ SRCS_FOR_LIB:=$(SRCDIR)bpt.c
 OBJS_FOR_LIB:=$(SRCS_FOR_LIB:.c=.o)
 
 CFLAGS+= -g -fPIC -I $(INC)
-CPPFLAGS+= -g -fPIC -I $(INC)
+CPPFLAGS+= -g -fPIC -I $(INC) -lpthread
 
 SRCS=$(wildcard $(SRCDIR)*.cpp )
 OBJS=$(patsubst %.cpp, %.o, $(notdir $(SRCS)))
