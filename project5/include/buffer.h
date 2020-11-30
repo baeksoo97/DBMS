@@ -68,8 +68,6 @@ void buffer_read_page(int table_id, pagenum_t pagenum, page_t * dest);
 
 void buffer_write_page(int table_id, pagenum_t pagenum, page_t * src);
 
-void buffer_unpin_frame(int table_id, pagenum_t pagenum, int cnt = 1);
-
 void buffer_print_tree(int table_id, bool verbose = false);
 void buffer_print_table(void);
 void buffer_print(void);

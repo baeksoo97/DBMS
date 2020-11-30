@@ -28,6 +28,7 @@ int trx_find(int table_id, k_t key, char * ret_val, int trx_id);
 // Update.
 
 int trx_update(int table_id, k_t key, char * value, int trx_id);
+int undo(int table_id, k_t key, char * old_value);
 
 // Insertion.
 

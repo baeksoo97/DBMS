@@ -31,7 +31,7 @@ all: $(TARGET)
 
 $(TARGET): $(OUT_OBJS)
 	make static_library
-	$(CXX) $(CFLAGS) -o $@ $^ -L $(LIBS) -lbpt
+	$(CXX) $(CFLAGS) -o $@ $^ -L $(LIBS) -lbpt -lpthread
 
 clean:
 	rm $(TARGET) $(OUT_OBJS) $(LIBS)*

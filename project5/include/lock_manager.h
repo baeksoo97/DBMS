@@ -16,7 +16,7 @@ typedef pair<int, int64_t> lock_key_t;
 
 typedef struct lock_entry_t{
     int table_id;
-    int64_t record_id;
+    int64_t key;
     lock_t * tail;
     lock_t * head;
 }lock_entry_t;
@@ -24,11 +24,13 @@ typedef struct lock_entry_t{
 typedef struct lock_t{
     lock_t * prev;
     lock_t * next;
+    lock_t * trx_next_lock;
+    lock_t * trx_prev_lock;
     lock_entry_t * sentinel;
     pthread_cond_t cond;
     int lock_mode;
-    lock_t * trx_next_lock;
     int owner_trx_id;
+    bool is_waiting;
 }lock_t;
 
 typedef struct hash_pair {
@@ -38,16 +40,27 @@ typedef struct hash_pair {
     }
 }hash_pair;
 
+extern pthread_mutex_t lock_manager_latch;
+
 /* APIs for lock table */
-// Initialize any data structured required for implementing lock table
+
+/*
+ * Initialize any data structured required for implementing lock table
+ */
 int init_lock_table(void);
 
-// Allocate and append a new lock object to the lock list
-// of the record having the key
+bool check_deadlock(int trx_id, lock_t * lock_obj);
+
+/*
+ * Allocate and append a new lock object to the lock list
+ * of the record having the key
+ */
 lock_t* lock_acquire(int table_id, int64_t key, int trx_id, int lock_mode);
 
-// Remove the lock_obj from the lock list
-int lock_release(lock_t* lock_obj);
+/*
+ * Remove the lock_obj from the lock list
+ */
+int lock_release(lock_t* lock_obj, bool is_aborted);
 
 
 #endif //LOCK_MANAGER_H

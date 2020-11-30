@@ -11,6 +11,9 @@ int open_table(char * pathname){
 
 // Initialize buffer pool with given number and buffer manager
 int init_db(int buf_num){
+    if (!init_lock_table()){
+        return -1;
+    }
     return index_init_db(buf_num);
 }
 
@@ -41,16 +44,17 @@ int db_find(int table_id, k_t key, char * ret_val, int trx_id){
         return -1;
     }
 
-
     int ret = trx_find(table_id, key, ret_val, trx_id);
-    if (ret == 0)
-        printf("find the record : key = %ld, value %s\n", key, ret_val);
-    else{
+
+    if (ret != 0) {
         printf("cannot find the record containing key %ld\n", key);
-//        trx_abort(); -> lock_release, rollback_results
+        trx_abort(trx_id);
+        return -1;
     }
 
-    return ret;
+    printf("find the record : key = %ld, value %s\n", key, ret_val);
+
+    return 0;
 }
 
 // Find the matching key and modify the values
@@ -61,13 +65,16 @@ int db_update(int table_id, k_t key, char * value, int trx_id){
     }
 
     int ret = trx_update(table_id, key, value, trx_id);
-    if (ret == 0)
-        printf("update the record : key = %ld, value %s\n", key, value);
-    else{
+
+    if (ret != 0) {
         printf("cannot update the record containing key %ld\n", key);
-//        trx_abort(); -> lock_release, rollback_results
+        trx_abort(trx_id);
+        return -1;
     }
 
+    printf("update the record : key = %ld, value %s\n", key, value);
+
+    return 0;
 }
 
 // Write the pages relating to this table to disk and close the table

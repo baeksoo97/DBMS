@@ -5,40 +5,43 @@
 #define TABLE_NUM 3
 #define KEY_NUM 20
 
-char update_val[120];
-void* trx_thread_func(void * arg){
+char update_val[120] = "t";
+string s_update = "";
+void* trx_thread_func(void * args){
     char ret_val[120];
     int table_id, trx_id, result;
     k_t key;
+
     trx_id = trx_begin();
+    printf("***********TRX_BEGIN - trx_id : %d, thread_id : %u\n", trx_id, pthread_self());
 
-    printf("trx_id : %d, thread_id : %u\n", trx_id, pthread_self());
-
-    for(int i = 0; i < TEST_NUM; i++){
-        table_id = rand() % TABLE_NUM + 1;
-        key = rand() % KEY_NUM + 1;
-        result = db_find(table_id, key, ret_val, trx_id);
-
-        if (result == 0){
-            printf("success\n");
-
-        }
-        else{
-            printf("abort\n");
-            break;
-        }
-    }
+//    for(int i = 0; i < TEST_NUM; i++){
+//        table_id = rand() % TABLE_NUM + 1;
+//        key = rand() % KEY_NUM + 1;
+//        result = db_find(table_id, key, ret_val, trx_id);
+//
+//        if (result == 0){
+//            printf("TEST FIND success - trx_id %d, thread_id %u, table_id %d, key %d, ret_val %s\n", trx_id, pthread_self(), table_id, key, ret_val);
+//        }
+//        else{
+//            printf("TEST FIND abort - trx_id %d, thread_id %u, table_id %d, key %d\n", trx_id, pthread_self(), table_id, key);
+//            break;
+//        }
+//    }
 
     if (result == 0){
         for(int i = 0; i < TEST_NUM; i++){
-            table_id = rand() % TABLE_NUM + 1;
-            key = rand() % KEY_NUM + 1;
+            table_id = i % TABLE_NUM + 1;
+            key = (i + 1) * 2;
+            s_update = "t" + to_string(key);
+            strcpy(update_val, s_update.c_str());
             result = db_update(table_id, key, update_val, trx_id);
             if (result == 0){
-                printf("success db_update\n");
+                printf("TEST UPDATE success - trx_id %d, thread_id %u, table_id %d, key %d, ret_val %s\n", trx_id, pthread_self(), table_id, key, update_val);
+
             }
             else{
-                printf("abort db_update\n");
+                printf("TEST UPDATE abort - trx_id %d, thread_id %u, table_id %d, key %d\n", trx_id, pthread_self(), table_id, key);
                 break;
             }
         }
@@ -46,10 +49,12 @@ void* trx_thread_func(void * arg){
 
     if (result == 0){
         trx_commit(trx_id);
+        printf("\n*** TEST COMMIT success - trx_id %d, thread_id %u\n", trx_id, pthread_self());
     }
     else{
-        printf("abort\n");
+        printf("\n*** TEST COMMIT abort - trx_id %d, thread_id %u\n", trx_id, pthread_self());
     }
+
     return NULL;
 
 }
@@ -68,6 +73,7 @@ void do_transaction(const int thread_num){
     for(int i = 0; i < thread_num; i++){
         pthread_join(trx_threads[i], NULL);
     }
+    printf("transaction done\n");
 }
 
 int main(int argc, char ** argv){
@@ -76,6 +82,8 @@ int main(int argc, char ** argv){
     int table_id = -1;
     int num_buf = 0;
     int trx_id = -1;
+    int thread_num = 0;
+    string s_value;
 
     k_t key, range;
     char value[120];
@@ -101,7 +109,8 @@ int main(int argc, char ** argv){
             db_print_table();
             break;
         case 'T':
-            do_transaction(5);
+            scanf("%d", &thread_num);
+            do_transaction(thread_num);
             break;
         case 'd':
             scanf("%d %ld", &table_id, &key);
@@ -120,7 +129,10 @@ int main(int argc, char ** argv){
         case 'I':
             scanf("%d %ld %ld", &table_id, &key, &range);
             for(k_t i = key; i <= range; i++){
-                strcpy(value, "test");
+                s_value = "test";
+                s_value += to_string(i);
+                strcpy(value, s_value.c_str());
+
                 db_insert(table_id, i, value);
             }
             break;
