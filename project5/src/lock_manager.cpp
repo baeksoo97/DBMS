@@ -87,16 +87,19 @@ lock_t* lock_acquire(int table_id, int64_t key, int trx_id, int lock_mode){
                     // S(working, mine) - X(waiting, mine)
                     else if (lock_mode == LOCK_EXCLUSIVE) {
                         // Case 1 - 1 - 1 - 2 - 1
-                        // if there is only my trx's lock in working list
-                        if (it->second.head == working_lock_obj
-                            && working_lock_obj->next == NULL
-                            && working_lock_obj->next->is_waiting) {
-                            working_lock_obj->lock_mode = LOCK_EXCLUSIVE;
-                            free(lock_obj);
-                            pthread_mutex_unlock(&lock_manager_latch);
-                            return working_lock_obj;
+                        // if there is only my trx's lock in working list,
+                        // upgrade the mode to X mode
+                        if (it->second.head == working_lock_obj){
+                            if (working_lock_obj->next == NULL
+                            || working_lock_obj->next->is_waiting) {
+                                working_lock_obj->lock_mode = LOCK_EXCLUSIVE;
+                                free(lock_obj);
+                                pthread_mutex_unlock(&lock_manager_latch);
+                                return working_lock_obj;
+                            }
                         }
-                        // if there is other trx's lock in working list
+                        // if there is other trx's lock in working list,
+
                         else if (!it->second.tail->is_waiting){
                             init_new_lock(table_id, key, trx_id, lock_mode, lock_obj);
                             lock_obj->prev = it->second.tail;
@@ -118,6 +121,10 @@ lock_t* lock_acquire(int table_id, int64_t key, int trx_id, int lock_mode){
                             pthread_mutex_unlock(&lock_manager_latch);
 
                             return lock_obj;
+                        }
+                        else{
+                            pthread_mutex_unlock(&lock_manager_latch);
+                            return nullptr;
                         }
                     }
                 }
