@@ -1,43 +1,44 @@
 .SUFFIXES: .cpp .o
 
-CC=gcc
-CXX=g++
+CC=g++
 
 SRCDIR=src/
 INC=include/
 LIBS=lib/
 
-# SRCS:=$(wildcard src/*.c)
-# OBJS:=$(SRCS:.c=.o)
+# SRCS:=$(wildcard src/*.cpp)
+# OBJS:=$(SRCS:.cpp=.o)
 
 # main source file
 TARGET_SRC:=$(SRCDIR)main.cpp
 TARGET_OBJ:=$(SRCDIR)main.o
+STATIC_LIB:=$(LIBS)libbpt.a
 
 # Include more files if you write another source file.
-SRCS_FOR_LIB:=$(SRCDIR)bpt.c
-OBJS_FOR_LIB:=$(SRCS_FOR_LIB:.c=.o)
+SRCS_FOR_LIB:= \
+	$(SRCDIR)api.cpp \
+	$(SRCDIR)index.cpp \
+	$(SRCDIR)file.cpp \
+	$(SRCDIR)buffer.cpp \
+	$(SRCDIR)lock_manager.cpp \
+	$(SRCDIR)transaction_manager.cpp
+
+OBJS_FOR_LIB:=$(SRCS_FOR_LIB:.cpp=.o)
 
 CFLAGS+= -g -fPIC -I $(INC)
-CPPFLAGS+= -g -fPIC -I $(INC) -lpthread
-
-SRCS=$(wildcard $(SRCDIR)*.cpp )
-OBJS=$(patsubst %.cpp, %.o, $(notdir $(SRCS)))
-OUT_OBJS = $(patsubst %, $(SRCDIR)%, $(OBJS))
 
 TARGET=main
 
 all: $(TARGET)
 
-$(TARGET): $(OUT_OBJS)
-	make static_library
-	$(CXX) $(CFLAGS) -o $@ $^ -L $(LIBS) -lbpt -lpthread
+$(TARGET): $(TARGET_OBJ) $(STATIC_LIB)
+	$(CC) $(CFLAGS) $< -o $@ -L $(LIBS) -lbpt -lpthread
+
+%.o: %.cpp
+	$(CC) $(CFLAGS) $^ -c -o $@ -lpthread
 
 clean:
-	rm $(TARGET) $(OUT_OBJS) $(LIBS)*
+	rm $(TARGET) $(TARGET_OBJ) $(OBJS_FOR_LIB) $(LIBS)*
 
-library:
-	g++ -shared -Wl,-soname,libbpt.so -o $(LIBS)libbpt.so $(OUT_OBJS)
-
-static_library:
-	ar cr $(LIBS)libbpt.a $(OUT_OBJS)
+$(STATIC_LIB): $(OBJS_FOR_LIB)
+	ar cr $@ $^
