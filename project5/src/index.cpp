@@ -97,7 +97,7 @@ int _find(int table_id, k_t key, char * ret_val){
 }
 
 int trx_find(int table_id, k_t key, char * ret_val, int trx_id){
-    printf("TRX FIND trx_id %d, table_id %d, key %lu\n", trx_id, table_id, key);
+//    printf("TRX FIND trx_id %d, table_id %d, key %lu\n", trx_id, table_id, key);
     int i;
     page_t * header_page, * page, *result_page;
     pagenum_t root_pagenum, pagenum;
@@ -139,17 +139,17 @@ int trx_find(int table_id, k_t key, char * ret_val, int trx_id){
 
         if (page->g.record[i].key == key){
             result_page = make_page();
-            printf("find before lock : trx_id %d, table_id %d, key %lu\n", trx_id, table_id, key);
+//            printf("find before lock : trx_id %d, table_id %d, key %lu\n", trx_id, table_id, key);
             buffer_read_page(table_id, pagenum, result_page);
             if (result_page->g.record[i].key == key){
-                printf("success find after lock : trx_id %d, table_id %d, key %lu\n", trx_id, table_id, key);
+//                printf("success find after lock : trx_id %d, table_id %d, key %lu\n", trx_id, table_id, key);
                 strcpy(ret_val, page->g.record[i].value);
                 free(result_page);
                 free(page);
                 return 0;
             }
             else{
-                printf("fail find after lock : trx_id %d, table_id %d, key %lu\n", trx_id, table_id, result_page->g.record[i].key);
+//                printf("fail find after lock : trx_id %d, table_id %d, key %lu\n", trx_id, table_id, result_page->g.record[i].key);
                 free(result_page);
                 free(page);
                 return -1;
@@ -165,7 +165,7 @@ int trx_find(int table_id, k_t key, char * ret_val, int trx_id){
 // UPDATE.
 int trx_update(int table_id, k_t key, char * value, int trx_id){
 
-    printf("TRX UPDATE trx_id %d, table_id %d, key %lu\n", trx_id, table_id, key);
+//    printf("TRX UPDATE trx_id %d, table_id %d, key %lu\n", trx_id, table_id, key);
     int i;
     page_t * header_page, * page;
     pagenum_t root_pagenum, pagenum;
@@ -201,12 +201,6 @@ int trx_update(int table_id, k_t key, char * value, int trx_id){
 
 
     for(i = 0; i < page->g.num_keys; i++){
-//        lock_obj = lock_acquire(table_id, page->g.record[i].key, trx_id, LOCK_SHARED);
-//        if (lock_obj == NULL) {
-//            free(page);
-//            return -1;
-//        }
-
         if (page->g.record[i].key == key){
             lock_obj = lock_acquire(table_id, page->g.record[i].key, trx_id, LOCK_EXCLUSIVE);
             if (lock_obj == NULL){
@@ -263,9 +257,9 @@ int undo(int table_id, k_t key, char * old_value){
 
     for(i = 0; i < page->g.num_keys; i++){
         if (page->g.record[i].key == key){
-            printf("before undo thread_id %u, table_id %d, key %lu, value %s\n", pthread_self(), table_id, key, page->g.record[i].value);
+//            printf("before undo thread_id %u, table_id %d, key %lu, value %s\n", pthread_self(), table_id, key, page->g.record[i].value);
             strcpy(page->g.record[i].value, old_value);
-            printf("after  undo thread_id %u, table_id %d, key %lu, value %s\n", pthread_self(), table_id, key, page->g.record[i].value);
+//            printf("after  undo thread_id %u, table_id %d, key %lu, value %s\n", pthread_self(), table_id, key, page->g.record[i].value);
             buffer_write_page(table_id, pagenum, page);
             free(page);
             return 0;
