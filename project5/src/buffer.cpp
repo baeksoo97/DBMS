@@ -293,7 +293,7 @@ void buffer_read_page(int table_id, pagenum_t pagenum, page_t * dest){
     while (frame_idx == -2)
         frame_idx = buffer_find_frame(table_id, pagenum);
 
-    printf("BUFFER_READ_PAGE  : table_id %d, pagenum %lu, frame idx %d \n", table_id, pagenum, frame_idx);
+//    printf("BUFFER_READ_PAGE  : table_id %d, pagenum %lu, frame idx %d \n", table_id, pagenum, frame_idx);
 
     // if buffer doesn't have page
     if (frame_idx == -1){
@@ -325,7 +325,7 @@ void buffer_write_page(int table_id, pagenum_t pagenum, page_t * src){
     while (frame_idx == -2)
         frame_idx = buffer_find_frame(table_id, pagenum);
 
-    printf("BUFFER_WRITE_PAGE : table_id %d, pagenum %lu, frame idx %d \n", table_id, pagenum, frame_idx);
+//    printf("BUFFER_WRITE_PAGE : table_id %d, pagenum %lu, frame idx %d \n", table_id, pagenum, frame_idx);
 
     // if buffer doesn't have page
     if (frame_idx == -1){
