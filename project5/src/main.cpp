@@ -2,7 +2,6 @@
 #include <pthread.h>
 // MAIN
 #define TEST_NUM 10
-#define TABLE_NUM 3
 #define KEY_NUM 20
 
 char update_val[120] = "t";
@@ -10,80 +9,80 @@ string s_update = "";
 unordered_map<int , vector<pair<int, int64_t> > > trx_result;
 unordered_map<int, vector<pair<int, int64_t> > >::iterator trx_it;
 
-void* trx_thread_func(void * args){
-    char ret_val[120];
-    int table_id, trx_id, result = 0;
-    k_t key;
+// void* trx_thread_func(void * args){
+//     char ret_val[120];
+//     int table_id, trx_id, result = 0;
+//     k_t key;
 
-    trx_id = trx_begin();
-    printf("***********TRX_BEGIN - trx_id : %d, thread_id : %u\n", trx_id, pthread_self());
+//     trx_id = trx_begin();
+//     printf("***********TRX_BEGIN - trx_id : %d, thread_id : %u\n", trx_id, pthread_self());
 
-    for(int i = 0; i < TEST_NUM; i++){
-        table_id = i % TABLE_NUM + 1;
-        key = (i + 1) * 2;
-        result = db_find(table_id, key, ret_val, trx_id);
+//     for(int i = 0; i < TEST_NUM; i++){
+//         table_id = i % TABLE_NUM + 1;
+//         key = (i + 1) * 2;
+//         result = db_find(table_id, key, ret_val, trx_id);
 
-        if (result == 0){
-            printf("TEST FIND success - trx_id %d, thread_id %u, table_id %d, key %d, ret_val %s\n", trx_id, pthread_self(), table_id, key, ret_val);
-        }
-        else{
-            printf("TEST FIND abort - trx_id %d, thread_id %u, table_id %d, key %d\n", trx_id, pthread_self(), table_id, key);
-            break;
-        }
-    }
+//         if (result == 0){
+//             printf("TEST FIND success - trx_id %d, thread_id %lu, table_id %d, key %d, ret_val %s\n", trx_id, pthread_self(), table_id, key, ret_val);
+//         }
+//         else{
+//             printf("TEST FIND abort - trx_id %d, thread_id %lu, table_id %d, key %d\n", trx_id, pthread_self(), table_id, key);
+//             break;
+//         }
+//     }
 
-//    if (result == 0){
-//        for(int i = 0; i < TEST_NUM; i++){
-//            table_id = i % TABLE_NUM + 1;
-//            key = (i + 1) * 2;
-//            s_update = "t" + to_string(key);
-//            strcpy(update_val, s_update.c_str());
-//            result = db_update(table_id, key, update_val, trx_id);
-//            if (result == 0){
-//                printf("TEST UPDATE success - trx_id %d, thread_id %u, table_id %d, key %d, ret_val %s\n", trx_id, pthread_self(), table_id, key, update_val);
-//
-//            }
-//            else{
-//                printf("TEST UPDATE abort - trx_id %d, thread_id %u, table_id %d, key %d\n", trx_id, pthread_self(), table_id, key);
-//                break;
-//            }
-//        }
-//    }
+// //    if (result == 0){
+// //        for(int i = 0; i < TEST_NUM; i++){
+// //            table_id = i % TABLE_NUM + 1;
+// //            key = (i + 1) * 2;
+// //            s_update = "t" + to_string(key);
+// //            strcpy(update_val, s_update.c_str());
+// //            result = db_update(table_id, key, update_val, trx_id);
+// //            if (result == 0){
+// //                printf("TEST UPDATE success - trx_id %d, thread_id %u, table_id %d, key %d, ret_val %s\n", trx_id, pthread_self(), table_id, key, update_val);
+// //
+// //            }
+// //            else{
+// //                printf("TEST UPDATE abort - trx_id %d, thread_id %u, table_id %d, key %d\n", trx_id, pthread_self(), table_id, key);
+// //                break;
+// //            }
+// //        }
+// //    }
 
-    if (result == 0){
-        trx_commit(trx_id);
-        printf("\n*** TEST COMMIT success - trx_id %d, thread_id %u\n", trx_id, pthread_self());
-    }
-    else{
-        printf("\n*** TEST COMMIT abort - trx_id %d, thread_id %u\n", trx_id, pthread_self());
-    }
+//     if (result == 0){
+//         trx_commit(trx_id);
+//         printf("\n*** TEST COMMIT success - trx_id %d, thread_id %lu\n", trx_id, pthread_self());
+//     }
+//     else{
+//         printf("\n*** TEST COMMIT abort - trx_id %d, thread_id %lu\n", trx_id, pthread_self());
+//     }
 
-    return NULL;
+//     return NULL;
 
-}
+// }
 
 void do_transaction(const int thread_num){
-    trx_result.clear();
-    char t1[10] = "t1.db", t2[10] = "t2.db", t3[10] = "t3.db";
-    init_db(10);
-    open_table(t1);
-    open_table(t2);
-    open_table(t3);
+    // trx_result.clear();
+    // char t1[10] = "t1.db", t2[10] = "t2.db", t3[10] = "t3.db";
+    // init_db(10);
+    // open_table(t1);
+    // open_table(t2);
+    // open_table(t3);
 
-    pthread_t trx_threads[thread_num];
-    for(int i = 0; i < thread_num; i++){
-        pthread_create(&trx_threads[i], 0, trx_thread_func, NULL);
-    }
-    for(int i = 0; i < thread_num; i++){
-        pthread_join(trx_threads[i], NULL);
-    }
+    // pthread_t trx_threads[thread_num];
+    // for(int i = 0; i < thread_num; i++){
+    //     pthread_create(&trx_threads[i], 0, trx_thread_func, NULL);
+    // }
+    // for(int i = 0; i < thread_num; i++){
+    //     pthread_join(trx_threads[i], NULL);
+    // }
 
-    for (trx_it = trx_result.begin(); trx_it != trx_result.end(); trx_it++) {
-        printf("Transaction %d - ", trx_it->first);
-        for (int i = 0; i < trx_it->second.size(); i++)
-            printf("(%d, %lld) ", trx_it->second[i].first, trx_it->second[i].second);
-        printf("\n");
-    }
+    // for (trx_it = trx_result.begin(); trx_it != trx_result.end(); trx_it++) {
+    //     printf("Transaction %d - ", trx_it->first);
+    //     for (int i = 0; i < trx_it->second.size(); i++)
+    //         printf("(%d, %lld) ", trx_it->second[i].first, trx_it->second[i].second);
+    //     printf("\n");
+    // }
     printf("transaction done\n");
 }
 
