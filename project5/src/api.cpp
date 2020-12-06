@@ -41,19 +41,24 @@ int db_delete(int table_id, k_t key){
 // Find the record containing input 'key'
 int db_find(int table_id, k_t key, char * ret_val, int trx_id){
     if (!index_is_opened(table_id)){
-//        printf("ERROR DB_FIND : table is not opened\n");
+        printf("ERROR DB_FIND : table is not opened\n");
         return -1;
     }
 
-    if (check_trx_abort(trx_id) == 0) {
-//        printf("ERROR DB_FIND : trx is already aborted -> trx_id %d\n", trx_id);
+    if (check_trx_abort(trx_id)) {
+        printf("ERROR DB_FIND : trx is already aborted -> trx_id %d\n", trx_id);
         return -1;
     }
 
     int ret = trx_find(table_id, key, ret_val, trx_id);
 
-    if (ret != 0) {
-//        printf("cannot find the record containing key %ld\n", key);
+    if (ret == -1) {
+        printf("ERROR FIND : ABORT %ld\n", key);
+        trx_abort(trx_id);
+        return -1;
+    }
+    else if (ret == -2) {
+        printf("ERROR FIND : CANNOT FIND KEY %ld\n", key);
         trx_abort(trx_id);
         return -1;
     }
@@ -70,15 +75,20 @@ int db_update(int table_id, k_t key, char * value, int trx_id){
         return -1;
     }
 
-    if (check_trx_abort(trx_id) == 0) {
+    if (check_trx_abort(trx_id)) {
 //        printf("ERROR DB_UPDATE : trx is already aborted -> trx_id %d\n", trx_id);
         return -1;
     }
 
     int ret = trx_update(table_id, key, value, trx_id);
 
-    if (ret != 0) {
-//        printf("cannot update the record containing key %ld\n", key);
+    if (ret == -1) {
+        printf("ERROR UPDATE : ABORT %ld\n", key);
+        trx_abort(trx_id);
+        return -1;
+    }
+    else if (ret == -2) {
+        printf("ERROR UPDATE : CANNOT FIND KEY %ld\n", key);
         trx_abort(trx_id);
         return -1;
     }
@@ -122,7 +132,7 @@ void db_print_buffer(void){
 }
 
 // Second message to the user.
-void usage(void){
+void print_usage(void){
     printf("Enter any of the following commands after the prompt > \n"
            "\tb <num_buf>              -- Init DB with the size of <num_buf> (an integer).\n"
            "\to <data_file>            -- Open <data_file> (a string).\n"

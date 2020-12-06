@@ -6,8 +6,8 @@
 
 char update_val[120] = "t";
 string s_update = "";
-unordered_map<int , vector<pair<int, int64_t> > > trx_result;
-unordered_map<int, vector<pair<int, int64_t> > >::iterator trx_it;
+unordered_map<int , vector<pair<int, k_t> > > trx_result;
+unordered_map<int, vector<pair<int, k_t> > >::iterator trx_it;
 
 // void* trx_thread_func(void * args){
 //     char ret_val[120];
@@ -98,7 +98,7 @@ int main(int argc, char ** argv){
     k_t key, range;
     char value[120];
 
-    usage();
+    print_usage();
     printf("> ");
     while (scanf("%c", &instruction) != EOF){
         switch (instruction){
@@ -165,7 +165,7 @@ int main(int argc, char ** argv){
             shutdown_db();
             return EXIT_SUCCESS;
         default:
-            usage();
+            print_usage();
             break;
         }
         while (getchar() != (int)'\n');

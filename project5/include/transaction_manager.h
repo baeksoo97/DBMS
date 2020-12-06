@@ -1,6 +1,7 @@
 #ifndef TRANSACTION_MANAGER_H
 #define TRANSACTION_MANAGER_H
 
+#include "file.h"
 #include "lock_manager.h"
 #include <stdint.h>
 #include <pthread.h>
@@ -9,10 +10,10 @@
 #include <set>
 using namespace std;
 
-typedef struct pair<int, int64_t> log_key_t;
+typedef struct pair<int, k_t> log_key_t;
 typedef struct log_t{
     int table_id;
-    int64_t key;
+    k_t key;
     char old_value[120];
 }log_t;
 

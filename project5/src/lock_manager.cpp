@@ -13,7 +13,7 @@ int init_lock_table(void){
     else return 0;
 }
 
-void init_new_lock(int table_id, int64_t key, int trx_id, int lock_mode, lock_t * lock_obj){
+void init_new_lock(int table_id, k_t key, int trx_id, int lock_mode, lock_t * lock_obj){
     lock_obj->next = NULL;
     lock_obj->trx_prev_lock = NULL;
     lock_obj->trx_next_lock = NULL;
@@ -46,7 +46,7 @@ bool check_deadlock(int trx_id, lock_t * lock_obj){
  * Allocate and append a new lock object to the lock list
  * of the record having the key
  */
-lock_t* lock_acquire(int table_id, int64_t key, int trx_id, int lock_mode){
+lock_t* lock_acquire(int table_id, k_t key, int trx_id, int lock_mode){
     pthread_mutex_lock(&lock_manager_latch);
 
     lock_t * lock_obj, * working_lock_obj;

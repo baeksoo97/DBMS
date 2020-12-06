@@ -18,12 +18,6 @@ int trx_begin(void){
 
     trx_manager[trx.trx_id] = trx;
 
-    if (trx.trx_id == 0){
-        perror("ERROR TRX_BEGIN");
-        pthread_mutex_unlock(&trx_manager_latch);
-        return -1;
-    }
-
     pthread_mutex_unlock(&trx_manager_latch);
 
     return trx.trx_id;
@@ -36,39 +30,40 @@ int trx_begin(void){
 int trx_commit(int trx_id){
     pthread_mutex_lock(&trx_manager_latch);
 
-    lock_t * lock, * tmp_lock;
+    lock_t * lock_obj, * tmp_lock_obj;
 
-    lock = trx_manager[trx_id].head;
-
-    while(lock != NULL){
-        tmp_lock = lock;
-        lock = lock->trx_next_lock;
-        lock_release(tmp_lock); // strict two phase lock
-    }
-
-    trx_manager.erase(trx_id);
-
-    if (trx_id == 0){
+    if (trx_id <= 0){
         perror("ERROR TRX_COMMIT");
         pthread_mutex_unlock(&trx_manager_latch);
         return -1;
     }
+
+    lock_obj = trx_manager[trx_id].head;
+
+    while(lock_obj != NULL){
+        tmp_lock_obj = lock_obj;
+        lock_obj = lock_obj->trx_next_lock;
+        lock_release(tmp_lock_obj); // strict two phase lock
+    }
+
+    trx_manager.erase(trx_id);
 
     pthread_mutex_unlock(&trx_manager_latch);
 
     return trx_id;
 }
 
-// return 0 if trx is aborted
+// return true if transaction is aborted
+// return false if transaction is not aborted
 bool check_trx_abort(int trx_id){
     pthread_mutex_lock(&trx_manager_latch);
     if (trx_manager.count(trx_id) == 0) {
         pthread_mutex_unlock(&trx_manager_latch);
-        return 0;
+        return true;
     }
     else {
         pthread_mutex_unlock(&trx_manager_latch);
-        return -1;
+        return false;
     }
 }
 
@@ -81,8 +76,7 @@ void trx_abort(int trx_id){
 
     lock_t * lock_obj, * tmp_lock_obj;
     int table_id;
-    int64_t key;
-    char * old_value;
+    k_t key;
     unordered_map<log_key_t, log_t, hash_pair>::iterator it;
 
     // undo operation using log_map
@@ -90,19 +84,21 @@ void trx_abort(int trx_id){
     for(it = trx_manager[trx_id].log_map.begin(); it != trx_manager[trx_id].log_map.end(); it++){
         table_id = it->first.first;
         key = it->first.second;
-        strcpy(old_value, it->second.old_value);
-        undo(table_id, key, old_value);
+        undo(table_id, key, it->second.old_value);
     }
+
     trx_manager[trx_id].log_map.clear();
 
     // release all locks in transaction
     // & clear trx entry
     lock_obj = trx_manager[trx_id].head;
+
     while(lock_obj != NULL){
         tmp_lock_obj = lock_obj;
-        lock_release(tmp_lock_obj);
         lock_obj = lock_obj->trx_next_lock;
+        lock_release(tmp_lock_obj); // strict two phase lock
     }
+
     trx_manager.erase(trx_id);
 
     pthread_mutex_unlock(&trx_manager_latch);
@@ -168,7 +164,7 @@ void trx_unlink_lock(lock_t * lock_obj){
 void trx_write_log(lock_t * lock_obj, char * old_value){
     pthread_mutex_lock(&trx_manager_latch);
     int table_id, trx_id;
-    int64_t key;
+    k_t key;
     log_t log;
 
     trx_id = lock_obj->owner_trx_id;

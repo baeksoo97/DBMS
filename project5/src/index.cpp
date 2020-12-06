@@ -96,22 +96,24 @@ int _find(int table_id, k_t key, char * ret_val){
     return find(table_id, root_pagenum, key, ret_val);
 }
 
+// return  0 : success
+// return -1 : fail - cannot acquire lock
+// return -2 : fail - key not found
 int trx_find(int table_id, k_t key, char * ret_val, int trx_id){
-//    printf("TRX FIND trx_id %d, table_id %d, key %lu\n", trx_id, table_id, key);
+    printf("TRX FIND trx_id %d, table_id %d, key %lu\n", trx_id, table_id, key);
     int i;
-    page_t * header_page, * page, *result_page;
+    page_t * page;
     pagenum_t root_pagenum, pagenum;
-    lock_t * lock;
+    lock_t * lock_obj;
 
-    header_page = buffer_read_header(table_id);
-    root_pagenum = header_page->h.root_pagenum;
-    free(header_page);
+    page = buffer_read_header(table_id);
+    root_pagenum = page->h.root_pagenum;
 
     if (root_pagenum == 0){
-        return -1;
+        free(page);
+        return -2;
     }
 
-    page = index_make_page();
     pagenum = root_pagenum;
     buffer_read_page(table_id, pagenum, page);
 
@@ -131,56 +133,52 @@ int trx_find(int table_id, k_t key, char * ret_val, int trx_id){
     }
 
     for(i = 0; i < page->g.num_keys; i++){
-        lock = lock_acquire(table_id, page->g.record[i].key, trx_id, LOCK_SHARED);
-        if (lock == NULL) {
-            free(page);
-            return -1;
-        }
-
         if (page->g.record[i].key == key){
-            result_page = make_page();
+            lock_obj = lock_acquire(table_id, page->g.record[i].key, trx_id, LOCK_SHARED);
+            if (lock_obj == nullptr) {
+                free(page);
+                return -1;
+            }
+
 //            printf("find before lock : trx_id %d, table_id %d, key %lu\n", trx_id, table_id, key);
-            buffer_read_page(table_id, pagenum, result_page);
-            if (result_page->g.record[i].key == key){
+            buffer_read_page(table_id, pagenum, page);
+            if (page->g.record[i].key == key){
 //                printf("success find after lock : trx_id %d, table_id %d, key %lu\n", trx_id, table_id, key);
                 strcpy(ret_val, page->g.record[i].value);
-                free(result_page);
                 free(page);
                 return 0;
             }
             else{
 //                printf("fail find after lock : trx_id %d, table_id %d, key %lu\n", trx_id, table_id, result_page->g.record[i].key);
-                free(result_page);
                 free(page);
-                return -1;
+                return -2;
             }
         }
     }
 
     // key is not found
     free(page);
-    return -1;
+    return -2;
 }
 
-// UPDATE.
+// return  0 : success
+// return -1 : fail - cannot acquire lock
+// return -2 : fail - key not found
 int trx_update(int table_id, k_t key, char * value, int trx_id){
-
 //    printf("TRX UPDATE trx_id %d, table_id %d, key %lu\n", trx_id, table_id, key);
     int i;
-    page_t * header_page, * page;
+    page_t * page;
     pagenum_t root_pagenum, pagenum;
     lock_t * lock_obj;
 
-    header_page = buffer_read_header(table_id);
-    root_pagenum = header_page->h.root_pagenum;
-    free(header_page);
+    page = buffer_read_header(table_id);
+    root_pagenum = page->h.root_pagenum;
 
-    // empty tree
     if (root_pagenum == 0){
-        return -1;
+        free(page);
+        return -2;
     }
 
-    page = index_make_page();
     pagenum = root_pagenum;
     buffer_read_page(table_id, pagenum, page);
 
@@ -199,43 +197,52 @@ int trx_update(int table_id, k_t key, char * value, int trx_id){
         buffer_read_page(table_id, pagenum, page);
     }
 
-
     for(i = 0; i < page->g.num_keys; i++){
         if (page->g.record[i].key == key){
-            lock_obj = lock_acquire(table_id, page->g.record[i].key, trx_id, LOCK_EXCLUSIVE);
-            if (lock_obj == NULL){
+//            printf("update before lock : trx_id %d, table_id %d, key %lu\n", trx_id, table_id, key);
+            lock_obj = lock_acquire(table_id, page->g.record[i].key, trx_id, LOCK_SHARED);
+            if (lock_obj == nullptr) {
                 free(page);
                 return -1;
             }
-            trx_write_log(lock_obj, page->g.record[i].value);
-            strcpy(page->g.record[i].value, value);
-            buffer_write_page(table_id, pagenum, page);
-            free(page);
-            return 0;
+
+            buffer_read_page(table_id, pagenum, page);
+            if (page->g.record[i].key == key){
+                trx_write_log(lock_obj, page->g.record[i].value);
+//                printf("success update after lock : trx_id %d, table_id %d, key %lu\n", trx_id, table_id, key);
+                strcpy(page->g.record[i].value, value);
+                buffer_write_page(table_id, pagenum, page);
+                free(page);
+                return 0;
+            }
+            else{
+//                printf("fail update after lock : trx_id %d, table_id %d, key %lu\n", trx_id, table_id, page->g.record[i].key);
+                // key is not found
+                free(page);
+                return -2;
+            }
         }
     }
 
     // key is not found
     free(page);
-    return -1;
+    return -2;
 }
 
 int undo(int table_id, k_t key, char * old_value){
     int i;
-    page_t * header_page, * page;
+    page_t * page;
     pagenum_t root_pagenum, pagenum;
     lock_t * lock_obj;
 
-    header_page = buffer_read_header(table_id);
-    root_pagenum = header_page->h.root_pagenum;
-    free(header_page);
+    page = buffer_read_header(table_id);
+    root_pagenum = page->h.root_pagenum;
 
-    // empty tree
     if (root_pagenum == 0){
-        return -1;
+        free(page);
+        return -2;
     }
 
-    page = index_make_page();
     pagenum = root_pagenum;
     buffer_read_page(table_id, pagenum, page);
 
@@ -253,7 +260,6 @@ int undo(int table_id, k_t key, char * old_value){
 
         buffer_read_page(table_id, pagenum, page);
     }
-
 
     for(i = 0; i < page->g.num_keys; i++){
         if (page->g.record[i].key == key){
@@ -268,7 +274,7 @@ int undo(int table_id, k_t key, char * old_value){
 
     // key is not found
     free(page);
-    return -1;
+    return -2;
 }
 
 // INSERTION.

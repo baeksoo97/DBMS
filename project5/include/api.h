@@ -43,6 +43,6 @@ void db_print_table(void);
 void db_print_buffer(void);
 
 // Second message to the user.
-void usage(void);
+void print_usage(void);
 
 #endif // __API_H__
