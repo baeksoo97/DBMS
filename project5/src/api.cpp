@@ -63,8 +63,8 @@ int db_find(int table_id, k_t key, char * ret_val, int trx_id){
         return -1;
     }
 
-//    printf("find the record : key = %ld, value %s\n", key, ret_val);
-//
+    printf("find the record : key = %ld, value %s\n", key, ret_val);
+
     return 0;
 }
 

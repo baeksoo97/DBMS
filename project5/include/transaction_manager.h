@@ -52,6 +52,7 @@ void trx_write_log(lock_t * lock_obj, char * old_value);
 
 set<int> get_wait_for_graph(lock_t * lock_obj, set<int> visit_set);
 
+void print_transaction();
 
 
 #endif //TRANSACTION_MANAGER_H

@@ -16,8 +16,10 @@ int trx_begin(void){
     trx.head = NULL;
     trx.tail = NULL;
 
+    printf("TRX BEGIN %d \n", trx.trx_id);
     trx_manager[trx.trx_id] = trx;
 
+    print_transaction();
     pthread_mutex_unlock(&trx_manager_latch);
 
     return trx.trx_id;
@@ -28,6 +30,7 @@ int trx_begin(void){
  * that has been used in your lock manager.
  */
 int trx_commit(int trx_id){
+    printf("TRX COMMIT %d\n", trx_id);
     pthread_mutex_lock(&trx_manager_latch);
 
     lock_t * lock_obj, * tmp_lock_obj;
@@ -47,6 +50,8 @@ int trx_commit(int trx_id){
     }
 
     trx_manager.erase(trx_id);
+
+    print_transaction();
 
     pthread_mutex_unlock(&trx_manager_latch);
 
@@ -113,21 +118,24 @@ void trx_link_lock(lock_t * lock_obj){
 
     trx_id = lock_obj->owner_trx_id;
 
-    // if the lock_obj is the first operation in trx entry,
-    // just link to the head of trx entry
+    if (trx_manager.count(trx_id) == 0){
+        printf("ERROR TRX_LINK_LOCK : there's no trx %d in manager\n", trx_id);
+        return;
+    }
+
+    // if the lock_obj is the first operation
     if (trx_manager[trx_id].head == NULL){
         trx_manager[trx_id].head = lock_obj;
-
+        trx_manager[trx_id].tail = lock_obj;
     }
     // if there are already other operations in trx entry,
     // update the lock_obj and the tail
     else{
         lock_obj->trx_prev_lock = trx_manager[trx_id].tail;
         trx_manager[trx_id].tail->trx_next_lock = lock_obj;
+        trx_manager[trx_id].tail = lock_obj;
     }
 
-    // update the tail of trx entry
-    trx_manager[trx_id].tail = lock_obj;
     pthread_mutex_unlock(&trx_manager_latch);
 }
 
@@ -250,4 +258,26 @@ set<int> get_wait_for_graph(lock_t * lock_obj, set<int> visit_set){
     }
 
     return visit_set;
+}
+
+void print_transaction(){
+    unordered_map <int, trx_entry_t> ::iterator it;
+    int trx_id;
+    trx_entry_t trx_entry;
+    lock_t * lock_obj;
+
+    printf("****************** TRANSACTION ******************\n");
+    for (it = trx_manager.begin(); it != trx_manager.end(); it++){
+        trx_id = it->first;
+        trx_entry = it->second;
+        lock_obj = trx_entry.head;
+
+        printf("TRX %d -> ", trx_id);
+
+        while(lock_obj != NULL){
+            printf("(table_id %d, mode %d, wait %d) -> ", lock_obj->owner_trx_id, lock_obj->lock_mode, lock_obj->is_waiting);
+            lock_obj = lock_obj->next;
+        }
+        printf("\n");
+    }
 }
