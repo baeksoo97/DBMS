@@ -50,8 +50,6 @@ extern pthread_mutex_t lock_manager_latch;
  */
 int init_lock_table(void);
 
-bool check_deadlock(int trx_id, lock_t * lock_obj);
-
 /*
  * Allocate and append a new lock object to the lock list
  * of the record having the key

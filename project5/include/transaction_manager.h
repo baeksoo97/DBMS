@@ -50,7 +50,10 @@ void trx_unlink_lock(lock_t * lock_obj);
 
 void trx_write_log(lock_t * lock_obj, char * old_value);
 
-set<int> get_wait_for_graph(lock_t * lock_obj, set<int> visit_set);
+void get_wait_for_graph(lock_t * lock_obj, set<int> & visit_set);
+
+bool check_deadlock(int trx_id, lock_t * lock_obj);
+
 
 void print_transaction();
 

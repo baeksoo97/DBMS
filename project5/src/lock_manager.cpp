@@ -27,27 +27,13 @@ void init_new_lock(int table_id, k_t key, int trx_id, int lock_mode, lock_t * lo
     // lock_obj->is_waiting = true;
 }
 
-bool check_deadlock(int trx_id, lock_t * lock_obj){
-    set<int> visit_set;
-    set<int>::iterator it;
-
-    visit_set = get_wait_for_graph(lock_obj, visit_set);
-
-    for(it = visit_set.begin(); it != visit_set.end(); it++){
-        if (*it == trx_id){
-            return true;
-        }
-    }
-
-    return false;
-}
-
 /*
  * Allocate and append a new lock object to the lock list
  * of the record having the key
  */
 lock_t* lock_acquire(int table_id, k_t key, int trx_id, int lock_mode){
     pthread_mutex_lock(&lock_manager_latch);
+    printf("     lock_acquire table_id %d, key %ld, trx_id %d, lock_mode %d\n", table_id, key, trx_id, lock_mode);
 
     lock_t * lock_obj, * working_lock_obj;
     lock_entry_t lock_entry;
@@ -239,110 +225,156 @@ lock_t* lock_acquire(int table_id, k_t key, int trx_id, int lock_mode){
  */
 int lock_release(lock_t * lock_obj){
     pthread_mutex_lock(&lock_manager_latch);
+    printf("     lock_release table_id %d, key %ld, trx_id %d, lock_mode %d\n",
+           lock_obj->sentinel->table_id, lock_obj->sentinel->key, lock_obj->owner_trx_id, lock_obj->lock_mode);
     lock_t * tmp_lock_obj;
-    bool is_entry_erased = false;
 
     // send signal only when the lock_obj is the head of lock list
     // and the next of lock_obj is waiting for the lock
 
-    // Case 1
     // if the lock_obj is the head of lock list
     if (lock_obj->sentinel->head == lock_obj){
-        // Case 1 - 1
-        // if there is a successor's lock waiting for the thread
-        // releasing the lock, wake up the successor.
-        if (lock_obj->next != NULL){
-            lock_obj->sentinel->head = lock_obj->next;
-            lock_obj->next->prev = NULL;
+        // if there is no more lock in the list,
+        // just erase the lock.
+        if (lock_obj->sentinel->tail == lock_obj){
+            lock_table.erase(lock_table.find(make_pair(lock_obj->sentinel->table_id, lock_obj->sentinel->key)));
+            free(lock_obj);
+            pthread_mutex_unlock(&lock_manager_latch);
+            return 0;
+        }
 
-            // Case 1 - 1 - 1
-            // if the next of lock_obj is waiting for the lock
-            if (lock_obj->next->is_waiting){
-                // Case 1 - 1 - 1 - 1
-                // if the next of lock_obj is shared mode,
-                if (lock_obj->next->lock_mode == LOCK_SHARED){
-                    // Case 1 - 1 - 1 - 2 - 1
-                    // when lock_obj is lock mode,
-                    // just release the lock
-                    if (lock_obj->lock_mode == LOCK_SHARED){
-                        // do nothing
-                    }
-                    // Case 1 - 1 - 1 - 2 - 2
-                    // when lock_obj is exclusive mode,
-                    // wake up all the next shared mode of lock_obj
-                    else if (lock_obj->lock_mode == LOCK_EXCLUSIVE){
-                        tmp_lock_obj = lock_obj->next;
-                        while(tmp_lock_obj != NULL && tmp_lock_obj->lock_mode == LOCK_SHARED) {
-                            tmp_lock_obj->is_waiting = false;
-                            pthread_cond_signal(&(tmp_lock_obj->cond));
-                            tmp_lock_obj = tmp_lock_obj->next;
-                        }
-                    }
-                }
-                // Case 1 - 1 - 1 - 2
-                // if the next of lock_obj is exclusive mode, wake it up
-                else if (lock_obj->next->lock_mode == LOCK_EXCLUSIVE){
-                    lock_obj->next->is_waiting = false;
-                    pthread_cond_signal(&(lock_obj->next->cond));
+        // if there is a successor's lock waiting for the thread releasing the lock,
+        // wake up the successor.
+        lock_obj->sentinel->head = lock_obj->next;
+        lock_obj->sentinel->head->prev = NULL;
+
+        // if the next of lock_obj is exclusive mode, wake it up
+        if (lock_obj->next->lock_mode == LOCK_EXCLUSIVE){
+            lock_obj->next->is_waiting = false;
+            pthread_cond_signal(&(lock_obj->next->cond));
+        }
+        else if (lock_obj->next->lock_mode == LOCK_SHARED){
+            if (lock_obj->lock_mode == LOCK_SHARED){
+                // do nothing
+            }
+            else if (lock_obj->lock_mode == LOCK_EXCLUSIVE){
+                // when lock_obj is exclusive mode,
+                // wake up all the next shared mode of lock_obj
+                tmp_lock_obj = lock_obj->next;
+                while(tmp_lock_obj != NULL && tmp_lock_obj->lock_mode == LOCK_SHARED) {
+                    tmp_lock_obj->is_waiting = false;
+                    pthread_cond_signal(&(tmp_lock_obj->cond));
+                    tmp_lock_obj = tmp_lock_obj->next;
                 }
             }
-        }
-        // Case 1 - 2
-        // if there is no more lock in the list
-        else{
-            lock_table.erase(lock_table.find(make_pair(lock_obj->sentinel->table_id, lock_obj->sentinel->key)));
-            is_entry_erased = true;
         }
     }
     // Case 2
     // if the lock_obj is not the head of lock list
     else{
-        // Case 2 - 1
+        // if the lock_obj is the tail of lock list,
+        // update the tail.
+        if (lock_obj->sentinel->tail == lock_obj){
+            lock_obj->sentinel->tail = lock_obj->prev;
+            lock_obj->sentinel->tail->next = NULL;
+        }
         // if the lock_obj is not the tail of lock list,
         // relink the around lock_objs of it
-        if (lock_obj->sentinel->tail != lock_obj){
+        else {
             lock_obj->next->prev = lock_obj->prev;
             lock_obj->prev->next = lock_obj->next;
 
-            if (!lock_obj->prev->is_waiting && lock_obj->prev->lock_mode == LOCK_SHARED){
-                if (lock_obj->next->is_waiting && lock_obj->next->lock_mode == LOCK_SHARED){
-                    tmp_lock_obj = lock_obj->next;
-
-                    while(tmp_lock_obj != NULL && tmp_lock_obj->lock_mode == LOCK_SHARED){
-                        tmp_lock_obj->is_waiting = false;
-                        pthread_cond_signal(&tmp_lock_obj->cond);
-                        tmp_lock_obj = tmp_lock_obj->next;
-                    }
-                }
-            }
-        }
-        // Case 2 - 2
-        // if the lock_obj is the tail of lock list,
-        // update the tail and the prev of lock_obj
-        else{
-            lock_obj->sentinel->tail = lock_obj->prev;
-            lock_obj->prev->next = NULL;
+//            if (!lock_obj->prev->is_waiting && lock_obj->prev->lock_mode == LOCK_SHARED){
+//                if (lock_obj->next->is_waiting && lock_obj->next->lock_mode == LOCK_SHARED){
+//                    tmp_lock_obj = lock_obj->next;
+//
+//                    while(tmp_lock_obj != NULL && tmp_lock_obj->lock_mode == LOCK_SHARED){
+//                        tmp_lock_obj->is_waiting = false;
+//                        pthread_cond_signal(&tmp_lock_obj->cond);
+//                        tmp_lock_obj = tmp_lock_obj->next;
+//                    }
+//                }
+//            }
         }
     }
 
-    if (!is_entry_erased){
-        if (lock_obj->sentinel->head->next != NULL && lock_obj->sentinel->head->next->is_waiting
-        && lock_obj->sentinel->head->owner_trx_id == lock_obj->sentinel->head->next->owner_trx_id){
-            // merge
-            tmp_lock_obj = lock_obj->sentinel->head;
+    if (lock_obj->sentinel->head->next != NULL && lock_obj->sentinel->head->next->is_waiting
+    && lock_obj->sentinel->head->owner_trx_id == lock_obj->sentinel->head->next->owner_trx_id){
+        // merge
+        tmp_lock_obj = lock_obj->sentinel->head;
+        trx_unlink_lock(tmp_lock_obj);
+        free(tmp_lock_obj);
 
-            lock_obj->sentinel->head = lock_obj->sentinel->head->next;
-            lock_obj->sentinel->head->is_waiting = false;
-            lock_obj->sentinel->head->prev = NULL;
+        lock_obj->sentinel->head = lock_obj->sentinel->head->next;
+        lock_obj->sentinel->head->is_waiting = false;
+        lock_obj->sentinel->head->prev = NULL;
 
-            trx_unlink_lock(tmp_lock_obj);
-            free(tmp_lock_obj);
-            pthread_cond_signal(&(lock_obj->sentinel->head->cond));
-        }
+        pthread_cond_signal(&(lock_obj->sentinel->head->cond));
     }
 
     free(lock_obj);
-
     pthread_mutex_unlock(&lock_manager_latch);
     return 0;
+
+}
+
+void print_lock_table_after_acquire(void){
+    pthread_mutex_lock(&lock_manager_latch);
+    unordered_map <lock_key_t, lock_entry_t, hash_pair>::iterator it;
+
+    int table_id;
+    k_t key;
+    lock_entry_t lock_entry;
+    lock_t * lock_obj;
+
+    printf("\n     ****************** AFTER ACQUIRE LOCK *****************************\n");
+    for(it = lock_table.begin(); it != lock_table.end(); it++){
+        table_id = it->first.first;
+        key = it->first.second;
+        lock_entry = it->second;
+        lock_obj = lock_entry.head;
+
+        printf("     LOCK [%2d, %2ld] : ", table_id, key);
+
+        while(lock_obj != NULL){
+            printf("(trx_id %d, %c, %s) -> ", lock_obj->owner_trx_id,
+                   lock_obj->lock_mode == LOCK_SHARED ? 'S' : 'X',
+                   lock_obj->is_waiting ? "waiting" : "working");
+            lock_obj = lock_obj->next;
+        }
+        printf("\n");
+    }
+    printf("     ****************************************************************\n\n");
+
+    pthread_mutex_unlock(&lock_manager_latch);
+}
+
+void print_lock_table_after_release(void){
+    pthread_mutex_lock(&lock_manager_latch);
+    unordered_map <lock_key_t, lock_entry_t, hash_pair>::iterator it;
+
+    int table_id;
+    k_t key;
+    lock_entry_t lock_entry;
+    lock_t * lock_obj;
+    printf("\n     ****************** AFTER RELEASE LOCK ******************\n");
+    for(it = lock_table.begin(); it != lock_table.end(); it++){
+        table_id = it->first.first;
+        key = it->first.second;
+        lock_entry = it->second;
+        lock_obj = lock_entry.head;
+
+        printf("     LOCK [%2d, %2ld] : ", table_id, key);
+
+        while(lock_obj != NULL){
+            printf("(trx_id %d, %c, %s) -> ", lock_obj->owner_trx_id,
+                   lock_obj->lock_mode == LOCK_SHARED ? 'S' : 'X',
+                   lock_obj->is_waiting ? "waiting" : "working");
+            lock_obj = lock_obj->next;
+        }
+        printf("\n");
+    }
+    printf("     *****************************************************\n\n");
+
+    pthread_mutex_unlock(&lock_manager_latch);
 }
