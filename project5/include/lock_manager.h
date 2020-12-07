@@ -63,5 +63,7 @@ lock_t* lock_acquire(int table_id, k_t key, int trx_id, int lock_mode);
  */
 int lock_release(lock_t* lock_obj);
 
+void print_lock_table_after_acquire(void);
+void print_lock_table_after_release(void);
 
 #endif //LOCK_MANAGER_H

@@ -63,7 +63,7 @@ int db_find(int table_id, k_t key, char * ret_val, int trx_id){
         return -1;
     }
 
-    printf("find the record : key = %ld, value %s\n", key, ret_val);
+    printf("TRX FIND   SUCCESS  : key = %ld, value %s\n", key, ret_val);
 
     return 0;
 }
@@ -93,7 +93,7 @@ int db_update(int table_id, k_t key, char * value, int trx_id){
         return -1;
     }
 
-//    printf("update the record : key = %ld, value %s\n", key, value);
+    printf("TRX UPDATE SUCCESS : key = %ld, value %s\n", key, value);
 
     return 0;
 }

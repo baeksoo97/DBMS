@@ -266,18 +266,21 @@ void print_transaction(){
     trx_entry_t trx_entry;
     lock_t * lock_obj;
 
-    printf("****************** TRANSACTION ******************\n");
+    printf("     ****************** TRANSACTION ******************\n");
     for (it = trx_manager.begin(); it != trx_manager.end(); it++){
         trx_id = it->first;
         trx_entry = it->second;
         lock_obj = trx_entry.head;
 
-        printf("TRX %d -> ", trx_id);
+        printf("     TRX %d -> ", trx_id);
 
         while(lock_obj != NULL){
-            printf("(table_id %d, mode %d, wait %d) -> ", lock_obj->owner_trx_id, lock_obj->lock_mode, lock_obj->is_waiting);
-            lock_obj = lock_obj->next;
+            printf("(trx_id %d, %c, %s) -> ", lock_obj->owner_trx_id,
+                   lock_obj->lock_mode == LOCK_SHARED ? 'S' : 'X',
+                   lock_obj->is_waiting ? "waiting" : "working");
+            lock_obj = lock_obj->trx_next_lock;
         }
         printf("\n");
     }
+    printf("     ***********************************************\n");
 }
