@@ -33,7 +33,7 @@ void init_new_lock(int table_id, k_t key, int trx_id, int lock_mode, lock_t * lo
  */
 lock_t* lock_acquire(int table_id, k_t key, int trx_id, int lock_mode){
     pthread_mutex_lock(&lock_manager_latch);
-    printf("     lock_acquire table_id %d, key %ld, trx_id %d, lock_mode %d\n", table_id, key, trx_id, lock_mode);
+//    printf("     lock_acquire table_id %d, key %ld, trx_id %d, lock_mode %d\n", table_id, key, trx_id, lock_mode);
 
     lock_t * lock_obj, * working_lock_obj;
     lock_entry_t lock_entry;
@@ -225,8 +225,8 @@ lock_t* lock_acquire(int table_id, k_t key, int trx_id, int lock_mode){
  */
 int lock_release(lock_t * lock_obj){
     pthread_mutex_lock(&lock_manager_latch);
-    printf("     lock_release table_id %d, key %ld, trx_id %d, lock_mode %d\n",
-           lock_obj->sentinel->table_id, lock_obj->sentinel->key, lock_obj->owner_trx_id, lock_obj->lock_mode);
+//    printf("     lock_release table_id %d, key %ld, trx_id %d, lock_mode %d\n",
+//           lock_obj->sentinel->table_id, lock_obj->sentinel->key, lock_obj->owner_trx_id, lock_obj->lock_mode);
     lock_t * tmp_lock_obj;
 
     // send signal only when the lock_obj is the head of lock list
