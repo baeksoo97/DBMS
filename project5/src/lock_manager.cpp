@@ -151,12 +151,13 @@ lock_t* lock_acquire(int table_id, k_t key, int trx_id, int lock_mode){
                         lock_table[make_pair(table_id, key)].tail->next = lock_obj;
                         lock_table[make_pair(table_id, key)].tail = lock_obj;
 
+                        trx_link_lock(lock_obj);
+
                         // deadlock may exist
                         if (check_deadlock(trx_id, lock_obj)) {
                             pthread_mutex_unlock(&lock_manager_latch);
                             return nullptr;
                         }
-                        trx_link_lock(lock_obj);
 
                         pthread_cond_wait(&(lock_obj->cond), &lock_manager_latch);
 
@@ -195,11 +196,11 @@ lock_t* lock_acquire(int table_id, k_t key, int trx_id, int lock_mode){
             // and link to its trx table if deadlock doesn't exist
             if (lock_obj->prev->is_waiting){
                 lock_obj->is_waiting = true;
+                trx_link_lock(lock_obj);
                 if (check_deadlock(trx_id, lock_obj)){
                     pthread_mutex_unlock(&lock_manager_latch);
                     return nullptr;
                 }
-                trx_link_lock(lock_obj);
 
                 pthread_cond_wait(&(lock_obj->cond), &lock_manager_latch);
             }
@@ -219,11 +220,11 @@ lock_t* lock_acquire(int table_id, k_t key, int trx_id, int lock_mode){
                 // and link to its trx table if deadlock doesn't exist
                 else{
                     lock_obj->is_waiting = true;
+                    trx_link_lock(lock_obj);
                     if (check_deadlock(trx_id, lock_obj)){
                         pthread_mutex_unlock(&lock_manager_latch);
                         return nullptr;
                     }
-                    trx_link_lock(lock_obj);
 
                     pthread_cond_wait(&(lock_obj->cond), &lock_manager_latch);
                 }
