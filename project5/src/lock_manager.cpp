@@ -128,7 +128,7 @@ lock_t* lock_acquire(int table_id, k_t key, int trx_id, int lock_mode){
                     // if there is only my trx's lock in working list,
                     // upgrade the mode to X mode
                     if (it->second.head == working_lock_obj
-                     && it->second.tail == working_lock_obj){
+                     && (it->second.tail == working_lock_obj || working_lock_obj->next->is_waiting)){
                         // printf("there is only mine\n");
                         working_lock_obj->lock_mode = LOCK_EXCLUSIVE;
                         free(lock_obj);
@@ -137,6 +137,11 @@ lock_t* lock_acquire(int table_id, k_t key, int trx_id, int lock_mode){
                     }
                     // if there is other trx's lock in working list,
                     else{
+                        if (it->second.tail->is_waiting){
+                            free(lock_obj);
+                            pthread_mutex_unlock(&lock_manager_latch);
+                            return nullptr;
+                        }
                         // printf("there is others\n");
                         lock_obj->next = NULL;
                         lock_obj->prev = it->second.tail;
@@ -191,12 +196,13 @@ lock_t* lock_acquire(int table_id, k_t key, int trx_id, int lock_mode){
             lock_table[make_pair(table_id, key)].tail->next = lock_obj;
             lock_table[make_pair(table_id, key)].tail = lock_obj;
 
+            trx_link_lock(lock_obj);
+
             // if previous lock_obj is waiting
             // let new lock_obj wait
             // and link to its trx table if deadlock doesn't exist
             if (lock_obj->prev->is_waiting){
                 lock_obj->is_waiting = true;
-                trx_link_lock(lock_obj);
                 if (check_deadlock(trx_id, lock_obj)){
                     pthread_mutex_unlock(&lock_manager_latch);
                     return nullptr;
@@ -211,7 +217,6 @@ lock_t* lock_acquire(int table_id, k_t key, int trx_id, int lock_mode){
                 // and there's no need to check deadlock so just link to its trx table
                 if (lock_obj->prev->lock_mode == LOCK_SHARED && lock_obj->lock_mode == LOCK_SHARED){
                     lock_obj->is_waiting = false;
-                    trx_link_lock(lock_obj);
                 }
                 //   S(working, other) - X(waiting, me)
                 //   X(working, other) - S(waiting, me)
@@ -220,7 +225,6 @@ lock_t* lock_acquire(int table_id, k_t key, int trx_id, int lock_mode){
                 // and link to its trx table if deadlock doesn't exist
                 else{
                     lock_obj->is_waiting = true;
-                    trx_link_lock(lock_obj);
                     if (check_deadlock(trx_id, lock_obj)){
                         pthread_mutex_unlock(&lock_manager_latch);
                         return nullptr;
@@ -261,6 +265,7 @@ int lock_release(lock_t * lock_obj){
     lock_t * tmp_lock_obj;
     int table_id = lock_obj->sentinel->table_id;
     k_t key = lock_obj->sentinel->key;
+
     // send signal only when the lock_obj is the head of lock list
     // and the next of lock_obj is waiting for the lock
 
@@ -277,8 +282,6 @@ int lock_release(lock_t * lock_obj){
 
         // if there is a successor's lock waiting for the thread releasing the lock,
         // wake up the successor.
-//        lock_obj->sentinel->head = lock_obj->next;
-//        lock_obj->sentinel->head->prev = NULL;
 
         if (lock_obj->lock_mode == LOCK_SHARED){
             if (lock_obj->next->is_waiting){
@@ -356,6 +359,8 @@ int lock_release_for_abort(lock_t * lock_obj){
     lock_t * tmp_lock_obj;
     int table_id = lock_obj->sentinel->table_id;
     k_t key = lock_obj->sentinel->key;
+    // send signal only when the lock_obj is the head of lock list
+    // and the next of lock_obj is waiting for the lock
 
     if (!lock_obj->is_waiting){
         // if the lock_obj is the head of lock list
@@ -409,7 +414,7 @@ int lock_release_for_abort(lock_t * lock_obj){
             }
             // if the lock_obj is not the tail of lock list,
             // relink the around lock_objs of it
-            else {
+            else{
                 if (lock_obj->lock_mode == LOCK_SHARED){
                     lock_obj->next->prev = lock_obj->prev;
                     lock_obj->prev->next = lock_obj->next;
@@ -420,9 +425,8 @@ int lock_release_for_abort(lock_t * lock_obj){
             }
         }
 
-
         if (lock_obj->sentinel->head->next != NULL && lock_obj->sentinel->head->next->is_waiting
-        && lock_obj->sentinel->head->owner_trx_id == lock_obj->sentinel->head->next->owner_trx_id) {
+            && lock_obj->sentinel->head->owner_trx_id == lock_obj->sentinel->head->next->owner_trx_id){
             // merge
             tmp_lock_obj = lock_obj->sentinel->head;
 
@@ -465,7 +469,6 @@ int lock_release_for_abort(lock_t * lock_obj){
             }
         }
     }
-
 
     free(lock_obj);
     return 0;
