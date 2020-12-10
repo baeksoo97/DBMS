@@ -50,6 +50,10 @@ extern pthread_mutex_t lock_manager_latch;
  */
 int init_lock_table(void);
 
+void acquire_lock_latch(void);
+
+void release_lock_latch(void);
+
 /*
  * Allocate and append a new lock object to the lock list
  * of the record having the key
@@ -61,7 +65,11 @@ lock_t* lock_acquire(int table_id, k_t key, int trx_id, int lock_mode);
  */
 int lock_release(lock_t* lock_obj);
 
+int lock_release_for_abort(lock_t * lock_obj);
+
 void print_lock_table_after_acquire(void);
 void print_lock_table_after_release(void);
+
+void print(bool option, string s);
 
 #endif //LOCK_MANAGER_H

@@ -140,7 +140,7 @@ int trx_find(int table_id, k_t key, char * ret_val, int trx_id){
                 return -1;
             }
 
-            // print_lock_table_after_acquire();
+             print_lock_table_after_acquire();
 
 //            printf("find before lock : trx_id %d, table_id %d, key %lu\n", trx_id, table_id, key);
             buffer_read_page(table_id, pagenum, page);
@@ -208,7 +208,7 @@ int trx_update(int table_id, k_t key, char * value, int trx_id){
                 return -1;
             }
 
-            // print_lock_table_after_acquire();
+             print_lock_table_after_acquire();
 
             buffer_read_page(table_id, pagenum, page);
             if (page->g.record[i].key == key){

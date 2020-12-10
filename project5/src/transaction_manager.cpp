@@ -42,16 +42,18 @@ int trx_commit(int trx_id){
     lock_obj = trx_manager[trx_id].head;
     pthread_mutex_unlock(&trx_manager_latch);
 
-
+    acquire_lock_latch();
 //    print_transaction();
     while(lock_obj != NULL){
         tmp_lock_obj = lock_obj;
         lock_obj = lock_obj->trx_next_lock;
         lock_release(tmp_lock_obj); // strict two phase lock
-        // print_lock_table_after_release();
+        print_lock_table_after_release();
     }
+    release_lock_latch();
 
     pthread_mutex_lock(&trx_manager_latch);
+    trx_manager[trx_id].log_map.clear();
     trx_manager.erase(trx_id);
     pthread_mutex_unlock(&trx_manager_latch);
 
@@ -83,6 +85,7 @@ void trx_abort(int trx_id){
         pthread_mutex_unlock(&trx_manager_latch);
         return;
     }
+
     // undo operation using log_map
     // & clear log_map
     for(it = trx_manager[trx_id].log_map.begin(); it != trx_manager[trx_id].log_map.end(); it++){
@@ -90,6 +93,7 @@ void trx_abort(int trx_id){
         key = it->first.second;
         undo(table_id, key, it->second.old_value);
     }
+
     trx_manager[trx_id].log_map.clear();
 
     // release all locks in transaction
@@ -98,13 +102,16 @@ void trx_abort(int trx_id){
 
     pthread_mutex_unlock(&trx_manager_latch);
 
+    acquire_lock_latch();
     while(lock_obj != NULL){
         tmp_lock_obj = lock_obj;
         lock_obj = lock_obj->trx_next_lock;
-        lock_release(tmp_lock_obj); // strict two phase lock
+        lock_release_for_abort(tmp_lock_obj); // strict two phase lock
     }
+    release_lock_latch();
 
     pthread_mutex_lock(&trx_manager_latch);
+    trx_manager[trx_id].log_map.clear();
     trx_manager.erase(trx_id);
     pthread_mutex_unlock(&trx_manager_latch);
 }
@@ -120,6 +127,7 @@ void trx_link_lock(lock_t * lock_obj){
 
     if (trx_manager.count(trx_id) == 0){
         printf("ERROR TRX_LINK_LOCK : there's no trx %d in manager\n", trx_id);
+        pthread_mutex_unlock(&trx_manager_latch);
         return;
     }
 
@@ -156,7 +164,7 @@ void trx_unlink_lock(lock_t * lock_obj){
     }
     else if (trx_manager[trx_id].head == lock_obj){
         trx_manager[trx_id].head = lock_obj->trx_next_lock;
-        lock_obj->trx_next_lock->trx_prev_lock= NULL;
+        trx_manager[trx_id].head->trx_prev_lock= NULL;
     }
     else if (trx_manager[trx_id].tail == lock_obj){
         trx_manager[trx_id].tail = lock_obj->trx_prev_lock;
@@ -170,7 +178,6 @@ void trx_unlink_lock(lock_t * lock_obj){
 }
 
 void trx_write_log(lock_t * lock_obj, char * old_value){
-    pthread_mutex_lock(&trx_manager_latch);
     int table_id, trx_id;
     k_t key;
     log_t log;
@@ -179,6 +186,7 @@ void trx_write_log(lock_t * lock_obj, char * old_value){
     table_id = lock_obj->sentinel->table_id;
     key = lock_obj->sentinel->key;
 
+    pthread_mutex_lock(&trx_manager_latch);
     if (trx_manager[trx_id].log_map.find(make_pair(table_id, key)) == trx_manager[trx_id].log_map.end()){
         log.table_id = table_id;
         log.key = key;
@@ -194,6 +202,10 @@ void get_wait_for_graph(lock_t * lock_obj, set<int> &visit_set){
     int prev_trx_id;
     lock_t * prev_lock_obj, * tmp_lock_obj;
 
+    // don't need to check dependency when lock is working
+    if (!lock_obj->is_waiting)
+        return;
+
     prev_lock_obj = lock_obj->prev;
 
     if (prev_lock_obj == NULL){
@@ -202,25 +214,7 @@ void get_wait_for_graph(lock_t * lock_obj, set<int> &visit_set){
     }
 
     if (prev_lock_obj->lock_mode == LOCK_SHARED){
-        if (lock_obj->lock_mode == LOCK_SHARED){
-            while (prev_lock_obj != NULL){
-                if (prev_lock_obj->lock_mode == LOCK_EXCLUSIVE){
-                    prev_trx_id = prev_lock_obj->owner_trx_id;
-                    if (visit_set.count(prev_trx_id) == 0){
-                        visit_set.insert(prev_trx_id);
-
-                        tmp_lock_obj = trx_manager[prev_trx_id].head;
-                        while(tmp_lock_obj != NULL){
-                            get_wait_for_graph(tmp_lock_obj, visit_set);
-                            tmp_lock_obj = tmp_lock_obj->trx_next_lock;
-                        }
-                    }
-                    break;
-                }
-                prev_lock_obj = prev_lock_obj->prev;
-            }
-        }
-        else{
+        if (prev_lock_obj->is_waiting){
             while (prev_lock_obj != NULL){
                 if (prev_lock_obj->lock_mode == LOCK_EXCLUSIVE)
                     break;
@@ -238,8 +232,27 @@ void get_wait_for_graph(lock_t * lock_obj, set<int> &visit_set){
                 prev_lock_obj = prev_lock_obj->prev;
             }
         }
+        else{
+            while (prev_lock_obj != NULL){
+                if (prev_lock_obj->owner_trx_id != lock_obj->owner_trx_id){
+                    prev_trx_id = prev_lock_obj->owner_trx_id;
+                    if (visit_set.count(prev_trx_id) == 0){
+                        visit_set.insert(prev_trx_id);
+
+                        tmp_lock_obj = trx_manager[prev_trx_id].head;
+                        while(tmp_lock_obj != NULL){
+                            get_wait_for_graph(tmp_lock_obj, visit_set);
+                            tmp_lock_obj = tmp_lock_obj->trx_next_lock;
+                        }
+                    }
+                    break;
+                }
+
+                prev_lock_obj = prev_lock_obj->prev;
+            }
+        }
     }
-    else{
+    else if (prev_lock_obj->lock_mode == LOCK_EXCLUSIVE){
         prev_trx_id = prev_lock_obj->owner_trx_id;
         if (visit_set.count(prev_trx_id)){
             return;
