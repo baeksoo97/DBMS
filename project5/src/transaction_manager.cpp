@@ -245,7 +245,6 @@ void get_wait_for_graph(lock_t * lock_obj, set<int> &visit_set){
                             tmp_lock_obj = tmp_lock_obj->trx_next_lock;
                         }
                     }
-                    break;
                 }
 
                 prev_lock_obj = prev_lock_obj->prev;
@@ -273,14 +272,13 @@ bool check_deadlock(int trx_id, lock_t * lock_obj){
 
     pthread_mutex_lock(&trx_manager_latch);
     get_wait_for_graph(lock_obj, visit_set);
-    pthread_mutex_unlock(&trx_manager_latch);
 
-    for(it = visit_set.begin(); it != visit_set.end(); it++){
-        if (*it == trx_id){
-            return true;
-        }
+    if (visit_set.count(trx_id)){
+        pthread_mutex_unlock(&trx_manager_latch);
+        return true;
     }
 
+    pthread_mutex_unlock(&trx_manager_latch);
     return false;
 }
 
