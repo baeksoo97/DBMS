@@ -43,7 +43,7 @@ void init_new_lock(int table_id, k_t key, int trx_id, int lock_mode, lock_t * lo
  */
 lock_t* lock_acquire(int table_id, k_t key, int trx_id, int lock_mode){
     pthread_mutex_lock(&lock_manager_latch);
-    printf("     lock_acquire table_id %d, key %ld, trx_id %d, lock_mode %d -> ", table_id, key, trx_id, lock_mode);
+    // printf("     lock_acquire table_id %d, key %ld, trx_id %d, lock_mode %d -> ", table_id, key, trx_id, lock_mode);
 
     lock_t * lock_obj, * working_lock_obj;
     lock_entry_t lock_entry;
@@ -61,7 +61,7 @@ lock_t* lock_acquire(int table_id, k_t key, int trx_id, int lock_mode){
     // if there is no predecessor's lock object,
     // return the address of the new lock object.
     if (it == lock_table.end()) {
-        printf(" empty table\n");
+        // printf(" empty table\n");
         lock_entry.table_id = table_id;
         lock_entry.key = key;
         lock_entry.head = lock_obj;
@@ -101,12 +101,12 @@ lock_t* lock_acquire(int table_id, k_t key, int trx_id, int lock_mode){
 
         // Case : there is lock_obj of same transaction in working list
         if (has_mine){
-            printf(" has mine -> ");
+            // printf(" has mine -> ");
             //   X(working, mine) - S(waiting, me)
             //   X(working, mine) - X(waiting, me)
             // there's no need to acquire new lock for lock_obj
             if (working_lock_obj->lock_mode == LOCK_EXCLUSIVE) {
-                printf(" X(working) - %d(me)\n", lock_mode);
+                // printf(" X(working) - %d(me)\n", lock_mode);
                 free(lock_obj);
                 pthread_mutex_unlock(&lock_manager_latch);
                 return working_lock_obj;
@@ -117,19 +117,19 @@ lock_t* lock_acquire(int table_id, k_t key, int trx_id, int lock_mode){
                 // S(working, mine) - S(waiting, me)
                 // there's no need to acquire new lock for lock_obj
                 if (lock_mode == LOCK_SHARED) {
-                    printf(" S(working) - S(me)\n");
+                    // printf(" S(working) - S(me)\n");
                     free(lock_obj);
                     pthread_mutex_unlock(&lock_manager_latch);
                     return working_lock_obj;
                 }
                 // S(working, mine) - X(waiting, me)
                 else if (lock_mode == LOCK_EXCLUSIVE) {
-                    printf(" S(working) - X(me) -> ");
+                    // printf(" S(working) - X(me) -> ");
                     // if there is only my trx's lock in working list,
                     // upgrade the mode to X mode
                     if (it->second.head == working_lock_obj
                      && it->second.tail == working_lock_obj){
-                        printf("there is only mine\n");
+                        // printf("there is only mine\n");
                         working_lock_obj->lock_mode = LOCK_EXCLUSIVE;
                         free(lock_obj);
                         pthread_mutex_unlock(&lock_manager_latch);
@@ -137,7 +137,7 @@ lock_t* lock_acquire(int table_id, k_t key, int trx_id, int lock_mode){
                     }
                     // if there is other trx's lock in working list,
                     else{
-                        printf("there is others\n");
+                        // printf("there is others\n");
                         lock_obj->next = NULL;
                         lock_obj->prev = it->second.tail;
                         lock_obj->trx_prev_lock = NULL;
@@ -176,7 +176,7 @@ lock_t* lock_acquire(int table_id, k_t key, int trx_id, int lock_mode){
         //           1) if exist, return null (and do abort)
         else{
             // append new lock_obj to the end of lock list
-            printf(" not has mine -> ");
+            // printf(" not has mine -> ");
             lock_obj->next = NULL;
             lock_obj->prev = it->second.tail;
             lock_obj->trx_next_lock = NULL;
@@ -233,7 +233,7 @@ lock_t* lock_acquire(int table_id, k_t key, int trx_id, int lock_mode){
             return lock_obj;
         }
     }
-    printf("ERROR LOCK ACQUIRE\n");
+     printf("ERROR LOCK ACQUIRE\n");
     return nullptr;
 }
 
@@ -255,10 +255,11 @@ void wake_up_lock(lock_t * lock_obj){
  * Remove the lock_obj from the lock list
  */
 int lock_release(lock_t * lock_obj){
-    printf("     lock_release table_id %d, key %ld, trx_id %d, lock_mode %d\n",
-           lock_obj->sentinel->table_id, lock_obj->sentinel->key, lock_obj->owner_trx_id, lock_obj->lock_mode);
+    // printf("     lock_release table_id %d, key %ld, trx_id %d, lock_mode %d\n",
+//           lock_obj->sentinel->table_id, lock_obj->sentinel->key, lock_obj->owner_trx_id, lock_obj->lock_mode);
     lock_t * tmp_lock_obj;
-
+    int table_id = lock_obj->sentinel->table_id;
+    k_t key = lock_obj->sentinel->key;
     // send signal only when the lock_obj is the head of lock list
     // and the next of lock_obj is waiting for the lock
 
@@ -268,7 +269,8 @@ int lock_release(lock_t * lock_obj){
         // just erase the lock.
         if (lock_obj->sentinel->tail == lock_obj){
             free(lock_obj);
-            lock_table.erase(lock_table.find(make_pair(lock_obj->sentinel->table_id, lock_obj->sentinel->key)));
+
+            lock_table.erase(make_pair(table_id, key));
             return 0;
         }
 
@@ -348,9 +350,11 @@ int lock_release(lock_t * lock_obj){
 
 int lock_release_for_abort(lock_t * lock_obj){
 
-    printf("     lock_release for abort table_id %d, key %ld, trx_id %d, lock_mode %d\n",
-           lock_obj->sentinel->table_id, lock_obj->sentinel->key, lock_obj->owner_trx_id, lock_obj->lock_mode);
+//    printf("     lock_release for abort table_id %d, key %ld, trx_id %d, lock_mode %d\n",
+//           lock_obj->sentinel->table_id, lock_obj->sentinel->key, lock_obj->owner_trx_id, lock_obj->lock_mode);
     lock_t * tmp_lock_obj;
+    int table_id = lock_obj->sentinel->table_id;
+    k_t key = lock_obj->sentinel->key;
 
     if (!lock_obj->is_waiting){
         // if the lock_obj is the head of lock list
@@ -359,7 +363,7 @@ int lock_release_for_abort(lock_t * lock_obj){
             // just erase the lock.
             if (lock_obj->sentinel->tail == lock_obj){
                 free(lock_obj);
-                lock_table.erase(lock_table.find(make_pair(lock_obj->sentinel->table_id, lock_obj->sentinel->key)));
+                lock_table.erase(make_pair(table_id, key));
                 return 0;
             }
 

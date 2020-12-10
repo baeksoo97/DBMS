@@ -13,7 +13,7 @@ int trx_begin(void){
 
     trx_entry_t trx;
     trx.trx_id = ++trx_cnt;
-    printf("TRX BEGIN %d \n", trx_cnt);
+    // printf("TRX BEGIN %d \n", trx_cnt);
     trx.head = NULL;
     trx.tail = NULL;
 
@@ -30,7 +30,7 @@ int trx_begin(void){
  * that has been used in your lock manager.
  */
 int trx_commit(int trx_id){
-    printf("TRX COMMIT %d\n", trx_id);
+    // printf("TRX COMMIT %d\n", trx_id);
     lock_t * lock_obj, * tmp_lock_obj;
 
     if (trx_id <= 0){
@@ -48,7 +48,7 @@ int trx_commit(int trx_id){
         tmp_lock_obj = lock_obj;
         lock_obj = lock_obj->trx_next_lock;
         lock_release(tmp_lock_obj); // strict two phase lock
-        print_lock_table_after_release();
+        // print_lock_table_after_release();
     }
     release_lock_latch();
 

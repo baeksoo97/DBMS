@@ -100,7 +100,7 @@ int _find(int table_id, k_t key, char * ret_val){
 // return -1 : fail - cannot acquire lock
 // return -2 : fail - key not found
 int trx_find(int table_id, k_t key, char * ret_val, int trx_id){
-    printf("TRX FIND            : trx_id %d, table_id %d, key %lu\n", trx_id, table_id, key);
+    // printf("TRX FIND            : trx_id %d, table_id %d, key %lu\n", trx_id, table_id, key);
     int i;
     page_t * page;
     pagenum_t root_pagenum, pagenum;
@@ -140,7 +140,7 @@ int trx_find(int table_id, k_t key, char * ret_val, int trx_id){
                 return -1;
             }
 
-             print_lock_table_after_acquire();
+             //print_lock_table_after_acquire();
 
 //            printf("find before lock : trx_id %d, table_id %d, key %lu\n", trx_id, table_id, key);
             buffer_read_page(table_id, pagenum, page);
@@ -167,7 +167,7 @@ int trx_find(int table_id, k_t key, char * ret_val, int trx_id){
 // return -1 : fail - cannot acquire lock
 // return -2 : fail - key not found
 int trx_update(int table_id, k_t key, char * value, int trx_id){
-    printf("TRX UPDATE           : trx_id %d, table_id %d, key %lu\n", trx_id, table_id, key);
+    // printf("TRX UPDATE           : trx_id %d, table_id %d, key %lu\n", trx_id, table_id, key);
     int i;
     page_t * page;
     pagenum_t root_pagenum, pagenum;
@@ -208,7 +208,7 @@ int trx_update(int table_id, k_t key, char * value, int trx_id){
                 return -1;
             }
 
-             print_lock_table_after_acquire();
+            //print_lock_table_after_acquire();
 
             buffer_read_page(table_id, pagenum, page);
             if (page->g.record[i].key == key){
