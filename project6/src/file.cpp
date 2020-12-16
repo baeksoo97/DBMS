@@ -13,20 +13,28 @@ queue <pagenum_t> q;
 int file_set_table(const char * pathname, int fd){
     int table_id;
     string s_pathname(pathname);
-    if (!file_table_map.count(s_pathname)){
-        table_id = (int)file_table_map.size() + 1;
 
-        if (table_id >= TABLE_NUM){
-            printf("ERROR FILE_OPEN_TABLE : all of table_ids are already used\n");
-            return -1;
-        }
-
-        file_table_map[s_pathname] = table_id;
-        table_fd_map[table_id] = make_pair(true, fd);
+    if (s_pathname.find("DATA")){
+        printf("ERROR FILE NAME WRONG \n");
+        return -1;
     }
     else{
-        table_id = file_table_map[s_pathname];
+        try{
+            table_id = stoi(s_pathname.substr(4));
+        }
+        catch (...){
+            printf("ERROR FILE NAME WRONG \n");
+            return -1;
+        }
+    }
+
+    if (table_id >= TABLE_NUM || table_id <= 0){
+        printf("ERROR FILE NAME WRONG : table_id is more than 10\n");
+        return -1;
+    }
+    else{
         table_fd_map[table_id] = make_pair(true, fd);
+        file_table_map[s_pathname] = table_id;
     }
 
     return table_id;

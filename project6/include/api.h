@@ -14,7 +14,7 @@
 int open_table(char * pathname);
 
 // Initialize buffer pool with given number and buffer manager
-int init_db(int buf_num);
+int init_db(int buf_num, int flag, int log_num, char * log_path, char * logmsg_path);
 
 // Insert input 'key/value' (record) to data file at the right place
 int db_insert(int table_id, int64_t key, char * value);

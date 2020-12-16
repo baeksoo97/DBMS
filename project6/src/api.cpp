@@ -5,12 +5,13 @@
 // Open existing data file using 'pathname' or create one if not existed
 int open_table(char * pathname){
     int table_id = index_open_table(pathname);
+    printf("table_id %d\n", table_id);
 
     return table_id;
 }
 
 // Initialize buffer pool with given number and buffer manager
-int init_db(int buf_num){
+int init_db(int buf_num, int flag, int log_num, char * log_path, char * logmsg_path){
     if (init_lock_table() != 0){
         printf("ERROR INIT LOCK TABLE\n");
         return -1;
