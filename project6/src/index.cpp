@@ -105,6 +105,7 @@ int trx_find(int table_id, k_t key, char * ret_val, int trx_id){
     page_t * page;
     pagenum_t root_pagenum, pagenum;
     lock_t * lock_obj;
+    pthread_mutex_t * page_latch;
 
     page = buffer_read_header(table_id);
     root_pagenum = page->h.root_pagenum;
@@ -132,10 +133,13 @@ int trx_find(int table_id, k_t key, char * ret_val, int trx_id){
         buffer_read_page(table_id, pagenum, page);
     }
 
+    page_latch = buffer_read_page_with_latch(table_id, pagenum, page, true);
+
     for(i = 0; i < page->g.num_keys; i++){
         if (page->g.record[i].key == key){
             lock_obj = lock_acquire(table_id, page->g.record[i].key, trx_id, LOCK_SHARED);
             if (lock_obj == nullptr) {
+                pthread_mutex_unlock(page_latch);
                 free(page);
                 return -1;
             }
@@ -143,21 +147,16 @@ int trx_find(int table_id, k_t key, char * ret_val, int trx_id){
              //print_lock_table_after_acquire();
 
 //            printf("find before lock : trx_id %d, table_id %d, key %lu\n", trx_id, table_id, key);
-            buffer_read_page(table_id, pagenum, page);
-            if (page->g.record[i].key == key){
+            buffer_read_page_with_latch(table_id, pagenum, page, false);
 //                printf("success find after lock : trx_id %d, table_id %d, key %lu\n", trx_id, table_id, key);
-                strcpy(ret_val, page->g.record[i].value);
-                free(page);
-                return 0;
-            }
-            else{
-//                printf("fail find after lock : trx_id %d, table_id %d, key %lu\n", trx_id, table_id, result_page->g.record[i].key);
-                free(page);
-                return -2;
-            }
+            strcpy(ret_val, page->g.record[i].value);
+            pthread_mutex_unlock(page_latch);
+            free(page);
+            return 0;
         }
     }
 
+    pthread_mutex_unlock(page_latch);
     // key is not found
     free(page);
     return -2;
@@ -172,6 +171,8 @@ int trx_update(int table_id, k_t key, char * value, int trx_id){
     page_t * page;
     pagenum_t root_pagenum, pagenum;
     lock_t * lock_obj;
+    pthread_mutex_t * page_latch;
+    lsn_t lsn;
 
     page = buffer_read_header(table_id);
     root_pagenum = page->h.root_pagenum;
@@ -199,32 +200,40 @@ int trx_update(int table_id, k_t key, char * value, int trx_id){
         buffer_read_page(table_id, pagenum, page);
     }
 
+    page_latch = buffer_read_page_with_latch(table_id, pagenum, page, true);
+
     for(i = 0; i < page->g.num_keys; i++){
         if (page->g.record[i].key == key){
 //            printf("update before lock : trx_id %d, table_id %d, key %lu\n", trx_id, table_id, key);
             lock_obj = lock_acquire(table_id, page->g.record[i].key, trx_id, LOCK_EXCLUSIVE);
             if (lock_obj == nullptr) {
+                pthread_mutex_unlock(page_latch);
                 free(page);
                 return -1;
             }
 
             //print_lock_table_after_acquire();
+//            if (lock_obj->is_waiting){
+//                pthread_mutex_unlock(page_latch);
+//
+//                page_latch = buffer_read_page_with_latch(table_id, pagenum, page, true);
+//            }
 
-            buffer_read_page(table_id, pagenum, page);
-            if (page->g.record[i].key == key){
-                trx_write_log(lock_obj, page->g.record[i].value);
-                strcpy(page->g.record[i].value, value);
-                buffer_write_page(table_id, pagenum, page);
+            buffer_read_page_with_latch(table_id, pagenum, page, false);
+
+            lsn = log_write_update_record(trx_id, table_id, pagenum, PAGE_HEADER_SIZE + DATA_LENGTH * i, page->g.record[i].value, value);
+
+            trx_write_log(lock_obj, pagenum, i, lsn, page->g.record[i].value, value);
+
+            strcpy(page->g.record[i].value, value);
+            page->g.page_lsn = lsn;
+
+            buffer_write_page_with_latch(table_id, pagenum, page, false);
+
+            pthread_mutex_unlock(page_latch);
 //                printf("success update after lock : trx_id %d, table_id %d, key %lu, value %s\n", trx_id, table_id, key, page->g.record[i].value);
-                free(page);
-                return 0;
-            }
-            else{
-//                printf("fail update after lock : trx_id %d, table_id %d, key %lu\n", trx_id, table_id, page->g.record[i].key);
-                // key is not found
-                free(page);
-                return -2;
-            }
+            free(page);
+            return 0;
         }
     }
 
@@ -233,50 +242,30 @@ int trx_update(int table_id, k_t key, char * value, int trx_id){
     return -2;
 }
 
-int undo(int table_id, k_t key, char * old_value){
+int undo(int table_id, pagenum_t pagenum, k_t key, char * old_value, lsn_t compensate_lsn){
     printf("TRX UNDO           \n");
     int i;
     page_t * page;
-    pagenum_t root_pagenum, pagenum;
     lock_t * lock_obj;
+    pthread_mutex_t * page_latch;
 
-    page = buffer_read_header(table_id);
-    root_pagenum = page->h.root_pagenum;
-
-    if (root_pagenum == 0){
-        free(page);
-        return -2;
-    }
-
-    pagenum = root_pagenum;
-    buffer_read_page(table_id, pagenum, page);
-
-    while(!page->g.is_leaf){
-        i = 0;
-        while (i < page->g.num_keys){
-            if (key >= page->g.entry[i].key) i++;
-            else break;
-        }
-
-        if (i == 0)
-            pagenum = page->g.next;
-        else
-            pagenum = page->g.entry[i - 1].pagenum;
-
-        buffer_read_page(table_id, pagenum, page);
-    }
+    page = make_page();
+    page_latch = buffer_read_page_with_latch(table_id, pagenum, page, true);
 
     for(i = 0; i < page->g.num_keys; i++){
         if (page->g.record[i].key == key){
 //            printf("before undo thread_id %u, table_id %d, key %lu, value %s\n", pthread_self(), table_id, key, page->g.record[i].value);
             strcpy(page->g.record[i].value, old_value);
+            page->g.page_lsn = compensate_lsn;
 //            printf("after  undo thread_id %u, table_id %d, key %lu, value %s\n", pthread_self(), table_id, key, page->g.record[i].value);
-            buffer_write_page(table_id, pagenum, page);
+            buffer_write_page_with_latch(table_id, pagenum, page, false);
+            pthread_mutex_unlock(page_latch);
             free(page);
             return 0;
         }
     }
 
+    pthread_mutex_unlock(page_latch);
     // key is not found
     free(page);
     return -2;
@@ -319,6 +308,8 @@ page_t * make_general_page(void){
     new_page->g.is_leaf = 0;
     new_page->g.num_keys = 0;
     new_page->g.next = 0;
+    new_page->g.page_lsn = -1;
+
     return new_page;
 }
 

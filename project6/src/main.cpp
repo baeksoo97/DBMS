@@ -1,197 +1,28 @@
-//#include "api.h"
-//#include <pthread.h>
-//// MAIN
-//#define TEST_NUM 10
-//#define KEY_NUM 20
-//
-//char update_val[120] = "t";
-//string s_update = "";
-//unordered_map<int , vector<pair<int, k_t> > > trx_result;
-//unordered_map<int, vector<pair<int, k_t> > >::iterator trx_it;
-//
-//int table_id = 0;
-//void* trx_thread_func(void * args){
-//    char ret_val[120];
-//    int trx_id, result = 0;
-//    k_t key;
-//
-//    trx_id = trx_begin();
-////    printf("     ***********TRX_BEGIN - trx_id : %d, thread_id : %u\n", trx_id, pthread_self());
-//
-////    for(int i = 0; i < TEST_NUM; i++){
-////         key = (i + 1) * 2;
-////         result = db_find(table_id, key, ret_val, trx_id);
-////
-////         if (result == 0){
-////             printf("TEST FIND success - trx_id %d, thread_id %lu, table_id %d, key %d, ret_val %s\n", trx_id, pthread_self(), table_id, key, ret_val);
-////         }
-////         else{
-////             printf("TEST FIND abort - trx_id %d, thread_id %lu, table_id %d, key %d\n", trx_id, pthread_self(), table_id, key);
-////             break;
-////         }
-////    }
-//
-//    if (result == 0){
-//        for(int i = 0; i < TEST_NUM - 2; i++){
-//            key = (i + 1) * 2;
-//            s_update = "t" + to_string(key);
-//            strcpy(update_val, s_update.c_str());
-//            printf("%d %s \n", key,  update_val);
-//            result = db_update(table_id, key, update_val, trx_id);
-//            if (result == 0){
-//                printf("TEST UPDATE success - trx_id %d, thread_id %u, table_id %d, key %d, ret_val %s\n", trx_id, pthread_self(), table_id, key, update_val);
-//            }
-//            else{
-//                printf("TEST UPDATE abort - trx_id %d, thread_id %u, table_id %d, key %d\n", trx_id, pthread_self(), table_id, key);
-//                break;
-//            }
-//        }
-//    }
-//
-//    if (result == 0){
-//        trx_commit(trx_id);
-//        printf("\n*** TEST COMMIT success - trx_id %d, thread_id %lu\n", trx_id, pthread_self());
-//    }
-//    else{
-//        printf("\n*** TEST COMMIT abort - trx_id %d, thread_id %lu\n", trx_id, pthread_self());
-//    }
-//
-//    return NULL;
-//}
-//
-//void do_transaction(const int thread_num){
-//     trx_result.clear();
-//     char t1[10] = "t1.db", t2[10] = "t2.db", t3[10] = "t3.db";
-//     init_db(10);
-//     table_id = open_table(t1);
-////     open_table(t2);
-////     open_table(t3);
-//
-//     pthread_t trx_threads[thread_num];
-//     for(int i = 0; i < thread_num; i++){
-//         pthread_create(&trx_threads[i], 0, trx_thread_func, NULL);
-//     }
-//     for(int i = 0; i < thread_num; i++){
-//         pthread_join(trx_threads[i], NULL);
-//     }
-//
-//     for (trx_it = trx_result.begin(); trx_it != trx_result.end(); trx_it++) {
-//         printf("Transaction %d - ", trx_it->first);
-//         for (int i = 0; i < trx_it->second.size(); i++)
-//             printf("(%d, %lld) ", trx_it->second[i].first, trx_it->second[i].second);
-//         printf("\n");
-//     }
-//    printf("transaction done\n");
-//}
-//
-//int main(int argc, char ** argv){
-//    char data_file[25];
-//    char instruction;
-//    int table_id = -1;
-//    int num_buf = 0;
-//    int trx_id = -1;
-//    int thread_num = 0;
-//    string s_value;
-//
-//    k_t key, range;
-//    char value[120];
-//
-//    print_usage();
-//    printf("> ");
-//    while (scanf("%c", &instruction) != EOF){
-//        switch (instruction){
-//        case 'b':
-//            scanf("%d", &num_buf);
-//            init_db(num_buf);
-//            break;
-//        case 'o':
-//            scanf("%s", data_file);
-//            table_id = open_table(data_file);
-//            db_print_table();
-//            break;
-//        case 'c':
-//            scanf("%d", &table_id);
-//            close_table(table_id);
-//            break;
-//        case 't':
-//            db_print_table();
-//            break;
-//        case 'T':
-//            scanf("%d", &thread_num);
-//            do_transaction(thread_num);
-//            break;
-//        case 'd':
-//            scanf("%d %ld", &table_id, &key);
-//            db_delete(table_id, key);
-//            break;
-//        case 'D':
-//            scanf("%d %ld %ld", &table_id, &key, &range);
-//            for(k_t i = key; i <= range; i++){
-//                db_delete(table_id, i);
-//            }
-//            break;
-//        case 'i':
-//            scanf("%d %ld %s", &table_id, &key, value);
-//            db_insert(table_id, key, value);
-//            break;
-//        case 'I':
-//            scanf("%d %ld %ld", &table_id, &key, &range);
-//            for(k_t i = key; i <= range; i++){
-//                s_value = "test";
-//                s_value += to_string(i);
-//                strcpy(value, s_value.c_str());
-//
-//                db_insert(table_id, i, value);
-//            }
-//            break;
-//        case 'f':
-//            scanf("%d %ld %d", &table_id, &key, &trx_id);
-//            db_find(table_id, key, value, trx_id);
-//            break;
-//        case 'n':
-//            db_print_buffer();
-//            break;
-//        case 'p':
-//            scanf("%d", &table_id);
-//            db_print_tree(table_id);
-//            break;
-//        case 's':
-//            shutdown_db();
-//            break;
-//        case 'q':
-//            while (getchar() != (int)'\n');
-//            shutdown_db();
-//            return EXIT_SUCCESS;
-//        default:
-//            print_usage();
-//            break;
-//        }
-//        while (getchar() != (int)'\n');
-//        printf("> ");
-//    }
-//    printf("\n");
-//    shutdown_db();
-//
-//    return EXIT_SUCCESS;
-//}
-#include "api.h"
-
-#include <stdint.h>
 #include <stdio.h>
+#include <time.h>
+#include <pthread.h>
+#include <stdint.h>
 #include <unistd.h>
 #include <stdlib.h>
-#include <time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <string.h>
-#include <pthread.h>
 #include <assert.h>
 #include <stdbool.h>
 
+#include "api.h"
+#include "transaction_manager.h"
+#include "log_manager.h"
+#include "index.h"
+
+int flag = 0;
+int log_num = 0;
+char log_path[120];
+char logmsg_path[120];
+
 
 #define DATABASE_BUFFER_SIZE	(100)
-
 
 typedef int			TableId;
 typedef int64_t		Key;
@@ -245,9 +76,6 @@ sort_table_id_key(TableId table_ids[], Key keys[], int count)
     }
     free(tik);
 }
-
-
-
 
 
 /******************************************************************************
@@ -326,13 +154,13 @@ single_thread_test()
     pthread_mutex_init(&SST_mutex, NULL);
 
     /* Initiate database. */
-    init_db(DATABASE_BUFFER_SIZE);
+    init_db(DATABASE_BUFFER_SIZE, flag, log_num, "LogFile.db", "LogMessageFile.txt");
 
     /* open table */
     for (int i = 0; i < SST_TABLE_NUMBER; i++) {
         char* str = (char*) malloc(sizeof(char) * 100);
         TableId table_id;
-        sprintf(str, "DATA%02d.db", i);
+        sprintf(str, "DATA%d", i + 1);
         table_id = open_table(str);
         table_id_array[i] = table_id;
 
@@ -378,6 +206,8 @@ single_thread_test()
         table_id = table_id_array[i];
         close_table(table_id);
     }
+
+//    print_log();
 
     /* shutdown db */
     shutdown_db();
@@ -434,11 +264,12 @@ SLT_func(void* args)
 
             ret = db_find(table_ids[i], keys[i], ret_val, transaction_id);
             if (ret != 0) {
-                printf("INCORRECT: fail to db_find()\n");
+                printf("INCORRECT: fail to db_find()\n", pthread_self());
                 return NULL;
             }
             if (atoi(ret_val) != keys[i]) {
                 printf("INCORRECT: value is wrong\n");
+                printf("value : %d, ret_val : %d\n", pthread_self(), i, keys[i], atoi(ret_val));
                 return NULL;
             }
         }
@@ -463,13 +294,13 @@ slock_test()
     pthread_mutex_init(&SLT_mutex, NULL);
 
     /* Initiate database. */
-    init_db(DATABASE_BUFFER_SIZE);
+    init_db(DATABASE_BUFFER_SIZE, flag, log_num, "LogFile.db", "LogMessageFile.txt");
 
     /* open table */
     for (int i = 0; i < SLT_TABLE_NUMBER; i++) {
         char* str = (char*) malloc(sizeof(char) * 100);
         TableId table_id;
-        sprintf(str, "DATA%02d.db", i);
+        sprintf(str, "DATA%d", i + 1);
         table_id = open_table(str);
         table_id_array[i] = table_id;
 
@@ -577,7 +408,10 @@ XLT_func(void* args)
             sprintf(val, "%ld", keys[i]);
             ret = db_update(table_ids[i], keys[i], val, transaction_id);
             if (ret != 0) {
-                printf("INCORRECT: fail to db_find()\n");
+                printf("INCORRECT: fail to db_update()\n"
+                       "table id : %d, key : %d, value : %d, Trx_id :%d\n"
+                        , table_ids[i], keys[i], val, transaction_id
+                );
                 return NULL;
             }
         }
@@ -602,13 +436,13 @@ xlock_test()
     pthread_mutex_init(&XLT_mutex, NULL);
 
     /* Initiate database. */
-    init_db(DATABASE_BUFFER_SIZE);
+    init_db(DATABASE_BUFFER_SIZE, flag, log_num, "LogFile.db", "LogMessageFile.txt");
 
     /* open table */
     for (int i = 0; i < XLT_TABLE_NUMBER; i++) {
         char* str = (char*) malloc(sizeof(char) * 100);
         TableId table_id;
-        sprintf(str, "DATA%02d.db", i);
+        sprintf(str, "DATA%d", i + 1);
         table_id = open_table(str);
         table_id_array[i] = table_id;
 
@@ -644,6 +478,7 @@ xlock_test()
 
         if (operation_count_0 == operation_count_1) {
             printf("INCORRECT: all threads are working nothing.\n");
+            //print_lock_table();
         }
     }
 
@@ -730,14 +565,14 @@ MLT_func(void* args)
                 sprintf(val, "%ld", keys[i] * (rand() % 100));
                 ret = db_update(table_ids[i], keys[i], val, transaction_id);
                 if (ret != 0) {
-                    printf("INCORRECT: fail to db_find()\n");
                     return NULL;
                 }
             }
 
         }
 
-        /* transaction commit */
+//        /* transaction commit */
+//        if (transaction_id % 2 == 0)
         trx_commit(transaction_id);
     }
 
@@ -757,13 +592,13 @@ mlock_test()
     pthread_mutex_init(&MLT_mutex, NULL);
 
     /* Initiate database. */
-    init_db(DATABASE_BUFFER_SIZE);
+    init_db(10, flag, log_num, "LogFile.db", "LogMessageFile.txt");
 
     /* open table */
     for (int i = 0; i < MLT_TABLE_NUMBER; i++) {
         char* str = (char*) malloc(sizeof(char) * 100);
         TableId table_id;
-        sprintf(str, "DATA%02d.db", i);
+        sprintf(str, "DATA%d", i + 1);
         table_id = open_table(str);
         table_id_array[i] = table_id;
 
@@ -799,6 +634,7 @@ mlock_test()
 
         if (operation_count_0 == operation_count_1) {
             printf("INCORRECT: all threads are working nothing.\n");
+//            print_lock_table();
         }
     }
 
@@ -915,13 +751,13 @@ deadlock_test()
     pthread_mutex_init(&DLT_mutex, NULL);
 
     /* Initiate database. */
-    init_db(DATABASE_BUFFER_SIZE);
+    init_db(DATABASE_BUFFER_SIZE, flag, log_num, "LogFile.db", "LogMessageFile.txt");
 
     /* open table */
     for (int i = 0; i < DLT_TABLE_NUMBER; i++) {
         char* str = (char*) malloc(sizeof(char) * 100);
         TableId table_id;
-        sprintf(str, "DATA%02d.db", i);
+        sprintf(str, "DATA%d", i + 1);
         table_id = open_table(str);
         table_id_array[i] = table_id;
 
@@ -957,6 +793,7 @@ deadlock_test()
 
         if (operation_count_0 == operation_count_1) {
             printf("INCORRECT: all threads are working nothing.\n");
+            //print_lock_table();
         }
     }
 
@@ -977,40 +814,251 @@ deadlock_test()
 }
 
 
+/******************************************************************************
+ * Main
+ */
+
+
+int main( void ) {
+
+    // Command
+    char instruction;
+
+    // Data file
+    char pathname[21];
+    int table_id;
+
+    // Buffer
+    int buf_size;
+
+    // Record (key-value pair)
+    int64_t input_key;
+    char input_value[120];
+
+    // Return value
+    char ret_val[120];
+
+    // For command 'I', 'D'
+    char a[120];
+    int64_t in_start, in_end, del_start, del_end;
+
+    // For time checking
+    time_t start, end;
+
+    // Result of each operation
+    int result;
+
+    // Transaction
+    int mode;
+
+    // Recovery
+    int _flag = 0;
+    int _log_num = 0;
+    char _log_path[120];
+    char _logmsg_path[120];
+    int test_cnt = 0;
+
+    // Usage
+    print_usage();
+    printf("> ");
+
+    while (scanf("%c", &instruction) != EOF) {
+
+        switch (instruction) {
+            case 'B':
+                scanf("%d", &buf_size);
+                scanf("%d %d %s %s", &_flag, &_log_num, _log_path, _logmsg_path);
+                result = init_db(DATABASE_BUFFER_SIZE, _flag, _log_num, _log_path, _logmsg_path);
+                if (result == 0) printf("DB initializing is completed\n");
+                else if (result == 1) printf("Buffer creation fault\n");
+                else if (result == 2) printf("DB is already initialized\nDB initializing fault\n");
+                else if (result == 3) printf("Buffer size must be over 0\nDB initializing fault\n");
+                else if (result == 4) printf("Lock table initialize error\n");
+                else if (result == 5) printf("Transaction mutex error\n");
+                else if (result == 6) printf("Recovery error\n");
+                else printf("? Error ?\n");
+                break;
+
+            case 'O':
+                scanf("%s", pathname);
+                table_id = open_table(pathname);
+                if (table_id == -1) printf("Fail to open file\nFile open fault\n");
+                else if (table_id == -2) printf("File name format is wrong\nFile name should be \"DATA00\"\nFile open fault\n");
+                else printf("File open is completed\nTable id : %d\n", table_id);
+                break;
+
+            case 'R':
+                index_init_db(100);
 
 
 
-int
-main(int argc, char* argv[])
-{
-    srand(123);
 
-    if (argc != 2) {
-        printf("Choose a workload\n");
-        printf("./test single_thread_test\n");
-        printf("./test slock_test\n");
-        printf("./test xlock_test\n");
-        printf("./test mlock_test\n");
-        printf("./test deadlock_test\n");
-        return 0;
+                scanf("%d %d %s %s", &_flag, &_log_num, _log_path, _logmsg_path);
+//                init_log(_logmsg_path);
+//                DB_recovery(_flag, _log_num, _log_path);
+
+
+                break;
+
+            case 'i':
+                scanf("%d %ld %[^\n]", &table_id, &input_key, input_value);
+                start = clock();
+                result = db_insert(table_id, input_key, input_value);
+                end = clock();
+                if (result == 0) {
+                    printf("Insertion is completed\n");
+                    printf("Time : %f\n", (double)(end - start));
+                }
+                else if (result == 1) printf("Table_id[%d] file is not exist\n", table_id);
+                else if (result == 2) printf("Duplicate key <%ld>\nInsertion fault\n", input_key);
+                break;
+
+            case 'd':
+                scanf("%d %ld", &table_id, &input_key);
+                start = clock();
+                result = db_delete(table_id, input_key);
+                end = clock();
+                if (result == 0) {
+                    printf("Deletion is completed\n");
+                    printf("Time : %f\n", (double)(end - start));
+                }
+                else if (result == 1) printf("Table_id[%d] file is not exist\n", table_id);
+                else if (result == 2) printf("No such key <%ld>\nDeletion fault\n", input_key);
+                break;
+
+            case 'u':
+                int trx_id;
+                int c_flag;
+                int numupdate;
+
+                trx_id = trx_begin();
+                printf("Num of update : ");
+                scanf("%d",&numupdate);
+
+                for (int i = 0; i < numupdate; i++) {
+                    scanf("%d %ld %[^\n]", &table_id, &input_key, input_value);
+                    db_update(table_id, input_key, input_value, trx_id);
+                }
+
+                printf("Abort (2) or Commit (1) or not (0)\n");
+
+                scanf("%d", &c_flag);
+
+                if (c_flag == 1)
+                    trx_commit(trx_id);
+                else if (c_flag == 2)
+                    trx_abort(trx_id);
+
+
+                break;
+
+            case 'L':
+//                write_log(0, 0);
+                break;
+
+            case 'I':
+                scanf("%d %ld %ld", &table_id, &in_start, &in_end);
+                strcpy(a, "a");
+                start = clock();
+                for (int64_t i = in_start; i <= in_end; i++) {
+                    sprintf(a, "%ld", i);
+                    result = db_insert(table_id, i, a);
+                    if (result == 2) printf("Duplicate key <%ld>\nInsertion fault\n", i);
+                }
+                end = clock();
+                printf("Time : %f\n", (double)(end - start));
+                break;
+
+            case 'D':
+                scanf("%d %ld %ld", &table_id, &del_start, &del_end);
+                start = clock();
+                for (int64_t i = del_start; i <= del_end; i++) {
+                    result = db_delete(table_id, i);
+                    if (result == 2) printf("No such key <%ld>\nDeletion fault\n", i);
+                }
+                end = clock();
+                printf("Time : %f\n", (double)(end - start));
+                break;
+
+            case 'T':
+                srand(123);
+
+                scanf("%d", &mode);
+
+                if (mode == 1) {
+                    single_thread_test();
+                }
+                else if (mode == 2) {
+                    slock_test();
+                }
+                else if (mode == 3) {
+                    xlock_test();
+                }
+                else if (mode == 4) {
+                    mlock_test();
+                }
+                else if (mode == 5) {
+                    deadlock_test();
+                }
+                break;
+
+            case 't':
+                db_print_table();
+                break;
+
+            case 'p':
+                scanf("%d", &table_id);
+//                db_print(table_id);
+                break;
+
+            case 'l':
+                scanf("%d", &table_id);
+//                db_print_leaf(table_id);
+                break;
+
+            case 'C':
+                scanf("%d", &table_id);
+                result = close_table(table_id);
+                if (result == 0) printf("Close is completed\n");
+                else if (result == 1) printf("File having table_id[%d] is not exist\nClose fault\n", table_id);
+                else printf("Close fault\n");
+                break;
+
+            case 'S':
+                result = shutdown_db();
+                if (result == 0) printf("Shutdown is completed\n");
+                else if (result == 1) printf("Buffer is not exist\nShutdown is completed\n");
+                else printf("Shutdown fault\n");
+                break;
+
+            case 'Q':
+                while (getchar() != (int)'\n');
+                result = shutdown_db();
+                if (result == 0) printf("Shutdown is completed\n");
+                else if (result == 1) printf("Buffer is not exist\nShutdown is completed\n");
+                else printf("Shutdown fault\n");
+                return EXIT_SUCCESS;
+
+            case 'F':
+                scanf("%d", &table_id);
+//                db_flush(table_id);
+                break;
+
+            case 'U':
+                print_usage();
+                break;
+
+            default:
+                printf("Invalid Command\n");
+                break;
+        }
+
+        while (getchar() != (int)'\n');
+        printf("> ");
+
     }
 
-    if (strcmp("single_thread_test", argv[1]) == 0) {
-        single_thread_test();
-    }
-    if (strcmp("slock_test", argv[1]) == 0) {
-        slock_test();
-    }
-    if (strcmp("xlock_test", argv[1]) == 0) {
-        xlock_test();
-    }
-    if (strcmp("mlock_test", argv[1]) == 0) {
-        mlock_test();
-    }
-    if (strcmp("deadlock_test", argv[1]) == 0) {
-        deadlock_test();
-    }
+    printf("\n");
 
-    return 0;
+    return EXIT_SUCCESS;
 }
-

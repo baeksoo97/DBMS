@@ -1,27 +1,36 @@
 #ifndef TRANSACTION_MANAGER_H
 #define TRANSACTION_MANAGER_H
 
-#include "file.h"
-#include "lock_manager.h"
 #include <stdint.h>
 #include <pthread.h>
 #include <unordered_map>
 #include <iostream>
 #include <set>
+#include <stack>
+
+#include "file.h"
+#include "lock_manager.h"
+#include "log_manager.h"
+
 using namespace std;
 
 typedef struct pair<int, k_t> log_key_t;
-typedef struct log_t{
+typedef struct undo_log_t{
+    lsn_t lsn;
     int table_id;
+    pagenum_t pagenum;
     k_t key;
-    char old_value[120];
-}log_t;
+    int key_idx;
+    char old_value[DATA_LENGTH];
+    char new_value[DATA_LENGTH];
+}undo_log_t;
 
 typedef struct trx_entry_t{
     int trx_id;
     lock_t * head;
     lock_t * tail;
-    unordered_map <log_key_t, log_t, hash_pair> log_map;
+    stack <undo_log_t> undo_log_st;
+    pthread_mutex_t trx_latch;
 }trx_entry_t;
 
 /*
@@ -48,7 +57,7 @@ void trx_link_lock(lock_t * lock_obj);
  */
 void trx_unlink_lock(lock_t * lock_obj);
 
-void trx_write_log(lock_t * lock_obj, char * old_value);
+void trx_write_log(lock_t * lock_obj, pagenum_t pagenum, int key_idx, lsn_t lsn, char * old_value, char * new_value);
 
 void get_wait_for_graph(lock_t * lock_obj, set<int> & visit_set);
 

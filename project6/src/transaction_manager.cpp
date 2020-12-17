@@ -1,5 +1,6 @@
 #include "transaction_manager.h"
 #include "index.h"
+#include "log_manager.h"
 
 unordered_map <int, trx_entry_t> trx_manager;
 pthread_mutex_t trx_manager_latch = PTHREAD_MUTEX_INITIALIZER;
@@ -16,9 +17,11 @@ int trx_begin(void){
     // printf("TRX BEGIN %d \n", trx_cnt);
     trx.head = NULL;
     trx.tail = NULL;
+    pthread_mutex_init(&trx.trx_latch, NULL);
 
     trx_manager[trx.trx_id] = trx;
 
+    log_write_general_record(LOG_TYPE_BEGIN, trx.trx_id);
 //    print_transaction();
     pthread_mutex_unlock(&trx_manager_latch);
 
@@ -53,9 +56,10 @@ int trx_commit(int trx_id){
     release_lock_latch();
 
     pthread_mutex_lock(&trx_manager_latch);
-    trx_manager[trx_id].log_map.clear();
     trx_manager.erase(trx_id);
     pthread_mutex_unlock(&trx_manager_latch);
+
+    log_write_general_record(LOG_TYPE_COMMIT, trx_id);
 
     return trx_id;
 }
@@ -77,8 +81,10 @@ bool check_trx_abort(int trx_id){
 void trx_abort(int trx_id){
     lock_t * lock_obj, * tmp_lock_obj;
     int table_id;
+    lsn_t next_undo_lsn, compensate_lsn;
     k_t key;
-    unordered_map<log_key_t, log_t, hash_pair>::iterator it;
+    stack <undo_log_t> undo_log_st;
+    undo_log_t log;
 
     pthread_mutex_lock(&trx_manager_latch);
     if (trx_manager.count(trx_id) == 0){
@@ -88,13 +94,20 @@ void trx_abort(int trx_id){
 
     // undo operation using log_map
     // & clear log_map
-    for(it = trx_manager[trx_id].log_map.begin(); it != trx_manager[trx_id].log_map.end(); it++){
-        table_id = it->first.first;
-        key = it->first.second;
-        undo(table_id, key, it->second.old_value);
-    }
 
-    trx_manager[trx_id].log_map.clear();
+    undo_log_st = trx_manager[trx_id].undo_log_st;
+    while(!undo_log_st.empty()){
+        log = undo_log_st.top();
+        undo_log_st.pop();
+
+        table_id = log.table_id;
+        key = log.key;
+        next_undo_lsn = undo_log_st.empty() ? -1 : undo_log_st.top().lsn;
+        compensate_lsn = log_write_compensate_record(trx_id, table_id, log.pagenum,
+                                                     PAGE_HEADER_SIZE + DATA_LENGTH * log.key_idx,
+                                                     log.old_value, log.new_value, next_undo_lsn);
+        undo(table_id, log.pagenum, key, log.old_value, compensate_lsn);
+    }
 
     // release all locks in transaction
     // & clear trx entry
@@ -111,9 +124,12 @@ void trx_abort(int trx_id){
     release_lock_latch();
 
     pthread_mutex_lock(&trx_manager_latch);
-    trx_manager[trx_id].log_map.clear();
     trx_manager.erase(trx_id);
     pthread_mutex_unlock(&trx_manager_latch);
+
+    log_write_general_record(LOG_TYPE_ROLLBACK, trx_id);
+
+    log_write_disk();
 }
 
 /*
@@ -177,24 +193,19 @@ void trx_unlink_lock(lock_t * lock_obj){
     pthread_mutex_unlock(&trx_manager_latch);
 }
 
-void trx_write_log(lock_t * lock_obj, char * old_value){
-    int table_id, trx_id;
-    k_t key;
-    log_t log;
+void trx_write_log(lock_t * lock_obj, pagenum_t pagenum, int key_idx, lsn_t lsn, char * old_value, char * new_value){
+    undo_log_t log;
 
-    trx_id = lock_obj->owner_trx_id;
-    table_id = lock_obj->sentinel->table_id;
-    key = lock_obj->sentinel->key;
+    log.lsn = lsn;
+    log.table_id = lock_obj->sentinel->table_id;
+    log.pagenum = pagenum;
+    log.key = lock_obj->sentinel->key;
+    log.key_idx = key_idx;
+    strcpy(log.old_value, old_value);
+    strcpy(log.new_value, new_value);
 
     pthread_mutex_lock(&trx_manager_latch);
-    if (trx_manager[trx_id].log_map.find(make_pair(table_id, key)) == trx_manager[trx_id].log_map.end()){
-        log.table_id = table_id;
-        log.key = key;
-        strcpy(log.old_value, old_value);
-
-        trx_manager[trx_id].log_map[make_pair(table_id, key)] = log;
-    }
-
+    trx_manager[lock_obj->owner_trx_id].undo_log_st.push(log);
     pthread_mutex_unlock(&trx_manager_latch);
 }
 

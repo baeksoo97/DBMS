@@ -1,6 +1,6 @@
 #ifndef __FILE_H__
 #define __FILE_H__
-
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h> // uint64_t
 #include <unistd.h> // lseek, write, open
@@ -13,10 +13,11 @@
 using namespace std;
 
 #define PAGE_SIZE 4096
+#define PAGE_HEADER_SIZE 128
 #define PAGE_NUM_FOR_RESERVE 100
 #define HEADER_PAGE_RESERVED_SIZE 4072
 #define FREE_PAGE_RESERVED_SIZE 4088
-#define PAGE_HEADER_RESERVED_SIZE 104
+#define PAGE_HEADER_RESERVED_SIZE 96
 #define VALUE_SIZE 120
 #define INTERNAL_ORDER 248
 #define LEAF_ORDER 31
@@ -27,6 +28,7 @@ using namespace std;
 typedef int64_t k_t;
 typedef uint64_t pagenum_t;
 
+//#pragma pack(push, 1)
 struct record {
     k_t key;
     char value[VALUE_SIZE];
@@ -53,7 +55,9 @@ typedef struct general_page_t{
     pagenum_t parent;
     uint32_t is_leaf;
     uint32_t num_keys;
-    uint8_t reserved[PAGE_HEADER_RESERVED_SIZE];
+    uint8_t reserved_1[8];
+    int64_t page_lsn;
+    uint8_t reserved_2[PAGE_HEADER_RESERVED_SIZE];
     pagenum_t next; // internal indicates the first child, leaf page indicates the right sibiling
 
     union{
@@ -72,7 +76,7 @@ typedef struct page_t {
     };
 } page_t;
 
-
+//#prama pack(pop)
 // FUNCTION PROTOTYPES
 
 // Try to open file named pathname and init header

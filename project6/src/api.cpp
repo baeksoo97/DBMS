@@ -1,4 +1,5 @@
 #include "api.h"
+#include "log_manager.h"
 
 // FUNCTION DEFINITIONS.
 
@@ -16,7 +17,22 @@ int init_db(int buf_num, int flag, int log_num, char * log_path, char * logmsg_p
         printf("ERROR INIT LOCK TABLE\n");
         return -1;
     }
-    return index_init_db(buf_num);
+
+    if (index_init_db(buf_num) != 0){
+        printf("ERROR INIT INDEX DB\n");
+        return -1;
+    }
+
+    if (init_log(flag, log_num, log_path, logmsg_path) != 0){
+        printf("ERROR INIT LOG\n");
+        return -1;
+    }
+    if (start_recovery(flag, log_num, log_path, logmsg_path) != 0){
+        printf("ERROR START RECOVERY\n");
+        return -1;
+    }
+
+    return 0;
 }
 
 // Insert input 'key/value' (record) to data file at the right place

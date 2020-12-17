@@ -57,11 +57,15 @@ int buffer_init_frame(int table_id, framenum_t frame_idx, pagenum_t pagenum, pag
 
 void buffer_alloc_frame(int table_id, pagenum_t pagenum, page_t * dest);
 
-framenum_t buffer_find_frame(int table_id, pagenum_t pagenum);
+framenum_t buffer_find_frame(int table_id, pagenum_t pagenum, bool need_page_latch);
 
 void buffer_read_page(int table_id, pagenum_t pagenum, page_t * dest);
 
 void buffer_write_page(int table_id, pagenum_t pagenum, page_t * src);
+
+pthread_mutex_t * buffer_read_page_with_latch(int table_id, pagenum_t pagenum, page_t * dest, bool need_page_latch);
+
+void buffer_write_page_with_latch(int table_id, pagenum_t pagenum, page_t * src, bool need_page_latch);
 
 void buffer_print_tree(int table_id, bool verbose = false);
 void buffer_print_table(void);

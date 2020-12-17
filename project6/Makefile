@@ -21,7 +21,8 @@ SRCS_FOR_LIB:= \
 	$(SRCDIR)file.cpp \
 	$(SRCDIR)buffer.cpp \
 	$(SRCDIR)lock_manager.cpp \
-	$(SRCDIR)transaction_manager.cpp
+	$(SRCDIR)transaction_manager.cpp \
+	$(SRCDIR)log_manager.cpp
 
 OBJS_FOR_LIB:=$(SRCS_FOR_LIB:.cpp=.o)
 
